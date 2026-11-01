@@ -1,0 +1,57 @@
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; height: 100%; overflow: hidden; }
+body {
+  background: var(--bg, #04121a);
+  font: 14px/1.4 "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+  color: #e6edf3;
+}
+#waves { position: fixed; inset: 0; width: 100%; height: 100%; }
+#waves path { transition: fill .6s; }
+body.animate #waves .layer { animation: bob var(--dur) ease-in-out infinite alternate; }
+@keyframes bob { from { transform: translateY(calc(var(--amp) * -1)); } to { transform: translateY(var(--amp)); } }
+
+main { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; padding-top: 25vh; }
+#search {
+  width: min(500px, calc(100vw - 48px)); height: 44px; border-radius: 22px;
+  background: rgba(52, 58, 64, .92); display: flex; align-items: center; gap: 12px; padding: 0 18px;
+  color: #c9d1d9; box-shadow: 0 10px 30px rgba(0, 0, 0, .25); border: 1px solid rgba(255, 255, 255, .04);
+  transition: box-shadow .15s, background .15s;
+}
+#search:focus-within { background: rgba(58, 64, 71, .98); box-shadow: 0 0 0 3px rgba(31, 199, 182, .25), 0 10px 30px rgba(0, 0, 0, .3); }
+#q { flex: 1; border: 0; outline: 0; background: transparent; color: #f0f4f8; font-size: 15px; }
+#q::placeholder { color: #c4ccd4; }
+
+#shortcuts { display: flex; gap: 14px; margin-top: 34px; flex-wrap: wrap; justify-content: center; max-width: 640px; }
+.sc { width: 88px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-decoration: none; color: #dbe4ec; font-size: 12px; padding: 12px 4px; border-radius: 14px; }
+.sc:hover { background: rgba(255, 255, 255, .07); }
+.sc .ico { width: 44px; height: 44px; border-radius: 50%; background: rgba(20, 30, 38, .75); display: grid; place-items: center; }
+.sc .ico img { width: 22px; height: 22px; }
+.sc span { max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+#customize-btn {
+  position: fixed; right: 10px; bottom: 10px; z-index: 2; height: 30px; padding: 0 12px; border-radius: 6px; border: 0;
+  background: rgba(8, 18, 24, .88); color: #f0f4f8; font: 600 12px/1 inherit; font-family: inherit; display: flex; align-items: center; gap: 7px; cursor: pointer;
+}
+#customize-btn:hover { background: rgba(8, 18, 24, 1); }
+#customize {
+  position: fixed; right: 10px; bottom: 50px; z-index: 3; width: 300px; padding: 14px; border-radius: 14px;
+  background: rgba(13, 20, 26, .97); border: 1px solid rgba(255, 255, 255, .07); box-shadow: 0 20px 50px rgba(0, 0, 0, .45);
+  animation: pop .15s ease-out;
+}
+@keyframes pop { from { transform: translateY(8px); opacity: 0; } }
+.c-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.c-head button { background: none; border: 0; color: #8a97a4; cursor: pointer; font-size: 13px; }
+.c-sec { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #6b7886; margin: 14px 0 8px; }
+#themes { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.th { height: 40px; border-radius: 9px; border: 2px solid transparent; cursor: pointer; }
+.th.on { border-color: #fff; }
+.c-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; color: #c9d4de; }
+.c-row input { accent-color: #1fc7b6; width: 16px; height: 16px; }
+#sc-list { display: flex; flex-direction: column; gap: 4px; max-height: 150px; overflow: auto; }
+.sc-item { display: flex; align-items: center; gap: 8px; font-size: 12.5px; padding: 4px 6px; border-radius: 7px; background: rgba(255,255,255,.03); }
+.sc-item span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sc-item button { background: none; border: 0; color: #8a97a4; cursor: pointer; }
+#sc-add { display: flex; gap: 6px; margin-top: 8px; }
+#sc-add input { min-width: 0; flex: 1; height: 30px; border-radius: 7px; border: 1px solid rgba(255,255,255,.08); background: #161e26; color: #e6edf3; padding: 0 8px; font: inherit; font-size: 12px; outline: 0; }
+#sc-add button { height: 30px; border-radius: 7px; border: 0; background: #1fc7b6; color: #062a27; font-weight: 700; padding: 0 10px; cursor: pointer; }

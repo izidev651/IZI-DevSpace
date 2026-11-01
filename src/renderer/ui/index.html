@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src * data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+  <title>Tide Browser</title>
+  <link rel="stylesheet" href="ui.css" />
+</head>
+<body>
+  <aside id="sidebar">
+    <div id="spaces" class="col"></div>
+    <div class="divider"></div>
+    <div id="groups" class="col scroll"></div>
+    <div id="side-tools" class="col">
+      <button class="side-btn" data-panel="search" title="Search tabs & web (Ctrl+K)"></button>
+      <button class="side-btn" data-panel="tabs" title="Tab list"></button>
+      <button class="side-btn" data-panel="notes" title="Notes"></button>
+      <button class="side-btn" id="theme-btn" title="Toggle theme"></button>
+      <button class="side-btn" data-panel="mcp" id="mcp-btn" title="MCP Server"></button>
+      <button class="side-btn" data-panel="settings" title="Settings"></button>
+    </div>
+  </aside>
+
+  <header id="topbar">
+    <div id="tabstrip">
+      <div id="pinned"></div>
+      <div id="tabs"></div>
+      <button id="new-tab" class="icon-btn" title="New tab (Ctrl+T)"></button>
+      <div class="drag-spacer"></div>
+      <div id="win-controls">
+        <button data-win="minimize" title="Minimize"></button>
+        <button data-win="maximize" title="Maximize"></button>
+        <button data-win="close" class="close" title="Close"></button>
+      </div>
+    </div>
+    <div id="toolbar">
+      <button class="icon-btn" id="nav-back" title="Back (Alt+Left)"></button>
+      <button class="icon-btn" id="nav-forward" title="Forward (Alt+Right)"></button>
+      <button class="icon-btn" id="nav-reload" title="Reload (Ctrl+R)"></button>
+      <div id="address-wrap">
+        <span id="address-icon"></span>
+        <input id="address" spellcheck="false" autocomplete="off" placeholder="Search or enter address" />
+      </div>
+      <div id="tools">
+        <button class="icon-btn tool" data-tool="devtools" title="DevTools (F12)"></button>
+        <button class="icon-btn tool" data-tool="mobile" title="Mobile View (Ctrl+Shift+M)"></button>
+        <button class="icon-btn tool" data-tool="capture" title="Capture Full Page (Ctrl+Shift+S)"></button>
+        <button class="icon-btn tool" data-tool="fakefill" title="Fake Fill forms"></button>
+        <button class="icon-btn tool" data-tool="menu" title="Tools"></button>
+        <button class="icon-btn tool" data-tool="dock" title="Dock Tab (split view)"></button>
+        <button class="icon-btn tool" data-tool="sleep" title="Sleep Tab"></button>
+      </div>
+    </div>
+    <div id="findbar" hidden>
+      <input id="find-input" placeholder="Find in page" spellcheck="false" />
+      <span id="find-count"></span>
+      <button class="icon-btn" id="find-prev" title="Previous"></button>
+      <button class="icon-btn" id="find-next" title="Next"></button>
+      <button class="icon-btn" id="find-close" title="Close (Esc)"></button>
+    </div>
+  </header>
+
+  <main id="content-frame"></main>
+  <div id="pane-decor"></div>
+
+  <div id="toasts"></div>
+
+  <div id="overlay" hidden>
+    <div id="backdrop"></div>
+    <div id="panel"></div>
+  </div>
+
+  <script src="icons.js"></script>
+  <script src="ui.js"></script>
+</body>
+</html>

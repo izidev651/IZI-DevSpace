@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src * data:; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+  <title>New tab</title>
+  <link rel="stylesheet" href="newtab.css" />
+</head>
+<body>
+  <svg id="waves" viewBox="0 0 1440 900" preserveAspectRatio="none" aria-hidden="true"></svg>
+  <main>
+    <form id="search">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7.5"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="q" autocomplete="off" spellcheck="false" placeholder="Search or type a URL" autofocus />
+    </form>
+    <div id="shortcuts"></div>
+  </main>
+  <button id="customize-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.17 6.81a1 1 0 0 0-3.99-3.99L3.84 16.17a2 2 0 0 0-.5.83l-1.32 4.35a.5.5 0 0 0 .62.62l4.35-1.32a2 2 0 0 0 .83-.5z"/></svg> Customize</button>
+  <aside id="customize" hidden>
+    <div class="c-head"><b>Customize</b><button id="c-close" title="Close">✕</button></div>
+    <div class="c-sec">Wave theme</div>
+    <div id="themes"></div>
+    <label class="c-row"><span>Animate waves</span><input type="checkbox" id="c-animate" /></label>
+    <label class="c-row"><span>Show shortcuts</span><input type="checkbox" id="c-shortcuts" /></label>
+    <div class="c-sec">Shortcuts</div>
+    <div id="sc-list"></div>
+    <form id="sc-add"><input id="sc-title" placeholder="Title" /><input id="sc-url" placeholder="https://…" /><button>Add</button></form>
+  </aside>
+  <script src="newtab.js"></script>
+</body>
+</html>
