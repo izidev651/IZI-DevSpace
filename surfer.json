@@ -1,0 +1,57 @@
+{
+  "name": "IZI DevSpace",
+  "vendor": "IZI Dev",
+  "appId": "zen",
+  "binaryName": "zen",
+  "version": {
+    "product": "firefox",
+    "version": "159.0",
+    "candidate": "159.0",
+    "candidateBuild": 1
+  },
+  "buildOptions": {
+    "generateBranding": true
+  },
+  "addons": {},
+  "brands": {
+    "release": {
+      "backgroundColor": "#282A33",
+      "brandShorterName": "IZI",
+      "brandShortName": "IZI DevSpace",
+      "brandFullName": "IZI DevSpace",
+      "release": {
+        "displayVersion": "1.24b",
+        "github": {
+          "repo": "izidev651/IZI-DevSpace"
+        },
+        "archives": {
+          "windows": "windows.mar",
+          "macos-aarch64": "macos-aarch64.mar",
+          "linux": "linux.mar",
+          "macos-x64": "macos-x64.mar",
+          "windows-arm64": "windows-arm64.mar",
+          "linux-aarch64": "linux-aarch64.mar"
+        }
+      }
+    },
+    "twilight": {
+      "backgroundColor": "#282A33",
+      "brandShorterName": "IZI",
+      "brandShortName": "IZI DevSpace Dev",
+      "brandFullName": "IZI DevSpace Dev",
+      "release": {
+        "displayVersion": "1.25t",
+        "github": {
+          "repo": "izidev651/IZI-DevSpace"
+        }
+      }
+    }
+  },
+  "license": {
+    "ignoredFiles": [
+      ".*\\.json"
+    ],
+    "licenseType": "MPL-2.0"
+  },
+  "updateHostname": "updates.invalid"
+}
