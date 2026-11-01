@@ -1,6 +1,6 @@
 # IZI DevSpace
 
-Browser custom berbasis engine **Chromium** (lewat Electron 45 / Chromium 142) dengan UI sendiri: Space & Group di sidebar, tool developer di toolbar, dan **MCP Server** bawaan agar agen AI (Claude Code, Claude Desktop, Cursor, dll.) bisa mengendalikan browser.
+Browser custom berbasis engine **Chromium** (lewat Electron 45) dengan UI sendiri: Space & Group di sidebar, tool developer di toolbar, dan **MCP Server** bawaan agar agen AI (Claude Code, Claude Desktop, Cursor, dll.) bisa mengendalikan browser.
 
 Konsep MCP terinspirasi dari [BrowserOS](https://github.com/browseros-ai/BrowserOS). Tidak ada kode BrowserOS (AGPL-3.0) yang disalin.
 
@@ -14,6 +14,7 @@ Konsep MCP terinspirasi dari [BrowserOS](https://github.com/browseros-ai/Browser
 | **Sleep Tab** | Tab tidur melepas memori tapi riwayat back/forward tetap tersimpan. Ada auto-sleep (default 30 menit, bisa diatur). Saat startup hanya tab aktif yang dimuat |
 | **Tab** | Drag untuk mengurutkan, pin, duplicate, pindah ke Group lain, reopen closed (Ctrl+Shift+T), middle-click untuk menutup |
 | **New Tab** | Latar gelombang (5 tema: teal/ocean/sunset/forest/mono, animasi bisa dimatikan), pencarian, shortcut. Diatur lewat tombol **Customize** |
+| **Login Google** | Settings → Google Sign-in (default **On**): khusus di `accounts.google.com` browser tampil sebagai Firefox versi terbaru (header HTTP + `navigator.*`), situs lain tetap Chrome. Popup login ("Sign in with Google" di situs lain) dibuka sebagai jendela popup asli supaya `window.opener` tetap jalan |
 | **MCP Server** | `http://127.0.0.1:9420/mcp` (Streamable HTTP), 23 tool. Bearer token opsional, plus proteksi DNS-rebinding/origin |
 
 ### Tool MCP
@@ -35,6 +36,12 @@ Buka panel **MCP Server** (ikon colokan di sidebar). Di sana tersedia snippet si
 
 ```bash
 claude mcp add --transport http izi-devspace http://127.0.0.1:9420/mcp
+```
+
+### Tes kompatibilitas login Google
+```bash
+IZI_COMPAT_EXTRA_HOSTS=127.0.0.1 npm start   # terminal 1
+npm run test:compat                          # terminal 2
 ```
 
 ### Tes end-to-end
@@ -76,5 +83,5 @@ scripts/smoke-test.js     tes end-to-end lewat MCP
 ## Catatan / batasan
 
 - Engine-nya Chromium asli (Blink + V8). Ini **bukan** fork Chromium seperti BrowserOS, jadi build-nya cepat (beberapa menit, bukan berjam-jam dengan source 100GB+).
-- Login Google kadang menolak browser berbasis Electron ("browser may not be secure"). Situs lain normal.
+- Login Google memakai mode kompatibilitas di atas. Ini bergantung pada cara Google mendeteksi browser, jadi bisa berhenti bekerja kalau Google mengubah deteksinya — matikan/nyalakan di Settings.
 - Dukungan Chrome extension di Electron terbatas, jadi belum diaktifkan.

@@ -8,6 +8,7 @@ const {
 const { pathToFileURL } = require('url');
 const { uid } = require('./store');
 const F = require('./features');
+const compat = require('./compat');
 
 const SIDEBAR_W = 70;
 const TOP_H = 84; // tab strip (42) + toolbar (42)
@@ -125,6 +126,8 @@ class Browser {
     this.autoSleepTimer = setInterval(() => this.autoSleep(), 60 * 1000);
   }
 
+  compatHosts() { return compat.hostsFrom(this.d.settings); }
+
   bgColor() { return this.d.settings.theme === 'light' ? '#e9edf1' : '#0d1218'; }
 
   // ---------------- sessions ----------------
@@ -132,6 +135,7 @@ class Browser {
     if (this.sessions.has(spaceId)) return this.sessions.get(spaceId);
     const ses = session.fromPartition(`persist:space-${spaceId}`);
     ses.setUserAgent(app.userAgentFallback);
+    compat.installHeaderRewrite(ses, () => this.compatHosts());
     ses.protocol.handle('izi', (req) => {
       const u = new URL(req.url);
       const root = path.join(RENDERER_DIR, u.hostname);
@@ -249,11 +253,42 @@ class Browser {
     wc.on('before-input-event', (e, input) => this.handleShortcut(e, input, false));
     wc.on('context-menu', (_e, params) => this.pageContextMenu(t, params));
     wc.setWindowOpenHandler(({ url, disposition }) => {
-      if (disposition === 'new-window' && url === 'about:blank') return { action: 'allow' };
+      // Real popups (window.open with features) keep window.opener, which
+      // "Sign in with Google", payment and other OAuth flows rely on.
+      if (disposition === 'new-window') {
+        return {
+          action: 'allow',
+          overrideBrowserWindowOptions: {
+            width: 520, height: 680, autoHideMenuBar: true, backgroundColor: '#ffffff', title: 'IZI DevSpace',
+            icon: path.join(__dirname, '..', '..', 'assets', 'icon.png'),
+          },
+        };
+      }
       this.createTab({ groupId: t.groupId, url, activate: disposition !== 'background-tab', after: t.id });
       return { action: 'deny' };
     });
+    wc.on('did-create-window', (child) => this.wirePopup(child, t));
     wc.debugger.on('detach', () => { r.cdpAttached = false; });
+    compat.attach(wc, () => this.compatHosts());
+  }
+
+  wirePopup(win, opener) {
+    const cwc = win.webContents;
+    compat.attach(cwc, () => this.compatHosts());
+    cwc.setWindowOpenHandler(({ url: u, disposition }) => {
+      if (disposition === 'new-window') return { action: 'allow', overrideBrowserWindowOptions: { autoHideMenuBar: true } };
+      this.createTab({ groupId: opener.groupId, url: u, after: opener.id });
+      return { action: 'deny' };
+    });
+    cwc.on('did-create-window', (child) => this.wirePopup(child, opener));
+    cwc.on('context-menu', (_e, p) => {
+      const items = [];
+      if (p.isEditable) items.push({ role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' });
+      else if (p.selectionText) items.push({ role: 'copy' });
+      if (p.linkURL) items.push({ label: 'Copy Link Address', click: () => clipboard.writeText(p.linkURL) });
+      items.push({ label: 'Reload', click: () => cwc.reload() });
+      Menu.buildFromTemplate(items).popup({ window: win });
+    });
   }
 
   disposeView(t, keepHistory = true) {
@@ -1027,6 +1062,7 @@ class Browser {
       case 'settings:set': {
         this.d.settings = { ...this.d.settings, ...a.patch };
         if (a.patch.theme) { this.win.setBackgroundColor(this.bgColor()); this.broadcastNewTab(); }
+        if (a.patch.compat) compat.refreshAll();
         this.changed();
         return this.d.settings;
       }

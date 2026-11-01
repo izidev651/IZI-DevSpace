@@ -20,7 +20,8 @@
     "test:smoke": "node scripts/smoke-test.js",
     "dist:win": "electron-builder --win",
     "dist:mac": "electron-builder --mac",
-    "dist:linux": "electron-builder --linux"
+    "dist:linux": "electron-builder --linux",
+    "test:compat": "node scripts/compat-test.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",

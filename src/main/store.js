@@ -17,6 +17,7 @@ const DEFAULT_SETTINGS = {
     { title: 'Gmail', url: 'https://mail.google.com' },
   ] },
   mobileDevice: 'iphone-15-pro',
+  compat: { googleLogin: true },
   mcp: { enabled: true, port: 9420, token: '' },
 };
 

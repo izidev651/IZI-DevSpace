@@ -460,6 +460,10 @@ function buildSettings(el) {
     <div class="section">Sleep Tabs</div>
     <div class="field"><label>Auto-sleep inactive tabs after</label>
       <select class="input" data-set="autoSleepMinutes" data-num>${opt({ 0: 'Never', 5: '5 minutes', 15: '15 minutes', 30: '30 minutes', 60: '1 hour', 120: '2 hours', 240: '4 hours' }, String(st.autoSleepMinutes))}</select></div>
+    <div class="section">Google Sign-in</div>
+    <div class="field"><label>Google sign-in compatibility</label>
+      <select class="input" data-set-compat="googleLogin">${opt({ on: 'On (recommended)', off: 'Off' }, st.compat?.googleLogin === false ? 'off' : 'on')}</select>
+      <div class="small muted">When on, accounts.google.com sees a standard Firefox identity so Google allows sign-in; every other site sees Chrome.</div></div>
     <div class="section">Mobile View</div>
     <div class="field"><label>Default device</label><select class="input" data-set="mobileDevice">${opt(S.devices, st.mobileDevice)}</select></div>
     <div class="section">Shortcuts</div>
@@ -473,6 +477,8 @@ function buildSettings(el) {
     <div class="small muted">IZI DevSpace · Chromium engine via Electron</div>
   </div>`;
   el.addEventListener('change', (e) => {
+    const c = e.target.closest('[data-set-compat]');
+    if (c) return act('settings:set', { patch: { compat: { ...(S.settings.compat || {}), [c.dataset.setCompat]: c.value === 'on' } } });
     const s = e.target.closest('[data-set]');
     if (!s) return;
     const v = s.hasAttribute('data-num') ? Number(s.value) : s.value;
