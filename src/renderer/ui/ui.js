@@ -366,7 +366,7 @@ function buildSearch(el, p) {
     const q = input.value.trim().toLowerCase();
     const items = [];
     if (q) {
-      const looksUrl = /^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(q) || /^(https?|tide|file):/.test(q) || /^localhost/.test(q);
+      const looksUrl = /^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(q) || /^(https?|izi|file):/.test(q) || /^localhost/.test(q);
       items.push({ title: looksUrl ? `Open ${input.value.trim()}` : `Search ${S.engines[S.settings.searchEngine] || 'Google'} for “${input.value.trim()}”`, kind: 'Enter', icon: looksUrl ? 'globe' : 'search', run: () => act('nav:go', { input: input.value.trim() }) });
       items.push({ title: 'Open in new tab', sub: input.value.trim(), kind: 'Alt+Enter', icon: 'plus', run: () => act('tab:new', { url: input.value.trim() }) });
     }
@@ -470,7 +470,7 @@ function buildSettings(el) {
       <kbd>F12</kbd> DevTools · <kbd>Ctrl+Shift+M</kbd> mobile · <kbd>Ctrl+Shift+S</kbd> capture
     </div>
     <div class="section">About</div>
-    <div class="small muted">Tide Browser · Chromium engine via Electron</div>
+    <div class="small muted">IZI DevSpace · Chromium engine via Electron</div>
   </div>`;
   el.addEventListener('change', (e) => {
     const s = e.target.closest('[data-set]');
@@ -508,9 +508,9 @@ function buildMcp(el, p) {
     const tok = S.mcp.token;
     const hdr = tok ? { Authorization: `Bearer ${tok}` } : undefined;
     const snippets = {
-      'claude-code': `claude mcp add --transport http tide ${url}${tok ? ` --header "Authorization: Bearer ${tok}"` : ''}`,
-      'claude-desktop': JSON.stringify({ mcpServers: { tide: { command: 'npx', args: ['-y', 'mcp-remote', url, ...(tok ? ['--header', `Authorization: Bearer ${tok}`] : [])] } } }, null, 2),
-      cursor: JSON.stringify({ mcpServers: { tide: { url, ...(hdr ? { headers: hdr } : {}) } } }, null, 2),
+      'claude-code': `claude mcp add --transport http izi-devspace ${url}${tok ? ` --header "Authorization: Bearer ${tok}"` : ''}`,
+      'claude-desktop': JSON.stringify({ mcpServers: { 'izi-devspace': { command: 'npx', args: ['-y', 'mcp-remote', url, ...(tok ? ['--header', `Authorization: Bearer ${tok}`] : [])] } } }, null, 2),
+      cursor: JSON.stringify({ mcpServers: { 'izi-devspace': { url, ...(hdr ? { headers: hdr } : {}) } } }, null, 2),
     };
     $$('#mcp-clients button').forEach((b) => b.classList.toggle('on', b.dataset.client === p.client));
     const s = snippets[p.client];

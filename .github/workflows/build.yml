@@ -8,12 +8,13 @@ on:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         os: [windows-latest, macos-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -26,9 +27,9 @@ jobs:
             macOS)   npx electron-builder --mac --publish never ;;
             Linux)   npx electron-builder --linux --publish never ;;
           esac
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
-          name: tide-browser-${{ runner.os }}
+          name: izi-devspace-${{ runner.os }}
           path: |
             dist/*.exe
             dist/*.zip

@@ -15,10 +15,10 @@ const PAD = 8;
 const GAP = 8;
 const FIND_H = 40;
 const DEVICE_BAR_H = 36;
-const NEWTAB_URL = 'tide://newtab/';
+const NEWTAB_URL = 'izi://newtab/';
 const RENDERER_DIR = path.join(__dirname, '..', 'renderer');
 
-const isNewTab = (url) => !url || url.startsWith('tide://newtab');
+const isNewTab = (url) => !url || url.startsWith('izi://newtab');
 
 class Browser {
   constructor(store) {
@@ -79,7 +79,7 @@ class Browser {
       minWidth: 640,
       minHeight: 420,
       show: false,
-      title: 'Tide Browser',
+      title: 'IZI DevSpace',
       backgroundColor: this.bgColor(),
       titleBarStyle: 'hidden',
       ...(isMac ? { trafficLightPosition: { x: 12, y: 14 } } : { frame: false }),
@@ -132,7 +132,7 @@ class Browser {
     if (this.sessions.has(spaceId)) return this.sessions.get(spaceId);
     const ses = session.fromPartition(`persist:space-${spaceId}`);
     ses.setUserAgent(app.userAgentFallback);
-    ses.protocol.handle('tide', (req) => {
+    ses.protocol.handle('izi', (req) => {
       const u = new URL(req.url);
       const root = path.join(RENDERER_DIR, u.hostname);
       let rel = decodeURIComponent(u.pathname);
@@ -150,7 +150,7 @@ class Browser {
   async onPermission(wc, permission, callback, details) {
     const always = ['clipboard-sanitized-write', 'fullscreen', 'pointerLock', 'keyboardLock', 'window-management'];
     if (always.includes(permission)) return callback(true);
-    if (wc?.getURL().startsWith('tide://')) return callback(true);
+    if (wc?.getURL().startsWith('izi://')) return callback(true);
     let origin = '';
     try { origin = new URL(details.requestingUrl || wc.getURL()).origin; } catch {}
     const key = `${origin}|${permission}`;
@@ -580,7 +580,7 @@ class Browser {
     this.toast({ message: 'Capturing full page…' });
     try {
       const { buffer, width, height } = await F.captureFullPage(r.view.webContents);
-      const dir = path.join(app.getPath('downloads'), 'Tide Captures');
+      const dir = path.join(app.getPath('downloads'), 'IZI DevSpace Captures');
       fs.mkdirSync(dir, { recursive: true });
       let host = 'page';
       try { host = new URL(t.url).hostname.replace(/[^\w.-]/g, '') || 'page'; } catch {}
@@ -935,7 +935,7 @@ class Browser {
     });
     ipcMain.handle('ui:state', (e) => (e.sender === this.ui.webContents ? this.snapshot() : null));
 
-    const fromNewTab = (e) => { try { return e.sender.getURL().startsWith('tide://'); } catch { return false; } };
+    const fromNewTab = (e) => { try { return e.sender.getURL().startsWith('izi://'); } catch { return false; } };
     ipcMain.handle('newtab:settings', (e) => (fromNewTab(e) ? { newTab: this.d.settings.newTab, engine: this.d.settings.searchEngine, theme: this.d.settings.theme } : null));
     ipcMain.handle('newtab:set', (e, patch) => {
       if (!fromNewTab(e) || !patch || typeof patch !== 'object') return null;

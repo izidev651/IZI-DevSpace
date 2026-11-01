@@ -1,4 +1,4 @@
-# Tide Browser
+# IZI DevSpace
 
 Browser custom berbasis engine **Chromium** (lewat Electron 45 / Chromium 142) dengan UI sendiri: Space & Group di sidebar, tool developer di toolbar, dan **MCP Server** bawaan agar agen AI (Claude Code, Claude Desktop, Cursor, dll.) bisa mengendalikan browser.
 
@@ -10,7 +10,7 @@ Konsep MCP terinspirasi dari [BrowserOS](https://github.com/browseros-ai/Browser
 |---|---|
 | **Sidebar** | **Space** (lingkaran atas, misalnya Personal / Work). Tiap Space punya cookie & login terpisah (`persist:space-<id>`). **Add Space** memakai nama, huruf/emoji/simbol, dan warna. Di bawahnya ada **Group** (kotak) dan **Add Group**. Klik kanan untuk Edit / Delete / Move to Space |
 | **Sidebar bawah** | Search (Ctrl+K, cari tab, URL, dan perintah), Tab list, Notes per Space, Light/Dark, **MCP Server**, Settings |
-| **Toolbar** | `</>` **DevTools** (menempel di kanan halaman), 📱 **Mobile View** (iPhone/Pixel/Galaxy/iPad, rotate, UA dan touch emulation), 📷 **Capture Full Page** (PNG ke `Downloads/Tide Captures` dan clipboard), **Fake Fill** (mengisi form dengan data palsu yang realistis), 🔧 Tools (zoom, find, print, PDF, clear data), ◫ **Dock Tab** (split view 2 tab), zᶻ **Sleep Tab** |
+| **Toolbar** | `</>` **DevTools** (menempel di kanan halaman), 📱 **Mobile View** (iPhone/Pixel/Galaxy/iPad, rotate, UA dan touch emulation), 📷 **Capture Full Page** (PNG ke `Downloads/IZI DevSpace Captures` dan clipboard), **Fake Fill** (mengisi form dengan data palsu yang realistis), 🔧 Tools (zoom, find, print, PDF, clear data), ◫ **Dock Tab** (split view 2 tab), zᶻ **Sleep Tab** |
 | **Sleep Tab** | Tab tidur melepas memori tapi riwayat back/forward tetap tersimpan. Ada auto-sleep (default 30 menit, bisa diatur). Saat startup hanya tab aktif yang dimuat |
 | **Tab** | Drag untuk mengurutkan, pin, duplicate, pindah ke Group lain, reopen closed (Ctrl+Shift+T), middle-click untuk menutup |
 | **New Tab** | Latar gelombang (5 tema: teal/ocean/sunset/forest/mono, animasi bisa dimatikan), pencarian, shortcut. Diatur lewat tombol **Customize** |
@@ -34,7 +34,7 @@ Butuh Node.js 20 atau lebih baru. Di Linux sebagai root tambahkan `-- --no-sandb
 Buka panel **MCP Server** (ikon colokan di sidebar). Di sana tersedia snippet siap salin, contohnya:
 
 ```bash
-claude mcp add --transport http tide http://127.0.0.1:9420/mcp
+claude mcp add --transport http izi-devspace http://127.0.0.1:9420/mcp
 ```
 
 ### Tes end-to-end
@@ -59,11 +59,11 @@ Untuk build silang Windows dari Linux tanpa wine, tambahkan `-c.win.signAndEditE
 ## Struktur
 
 ```
-src/main/main.js          entry: protocol tide://, user-agent, single instance
+src/main/main.js          entry: protocol izi://, user-agent, single instance
 src/main/browser.js       window, tab views, Space/Group, layout (split, devtools, mobile), sleep, menu, shortcut
 src/main/features.js      device preset, capture full page (CDP), script Fake Fill, snapshot elemen
 src/main/mcp-server.js    MCP server (Streamable HTTP) dan 23 tool
-src/main/store.js         state persisten (userData/tide-state.json)
+src/main/store.js         state persisten (userData/devspace-state.json)
 src/renderer/ui/          UI chrome (sidebar, tabstrip, toolbar, panel, modal)
 src/renderer/newtab/      halaman New Tab (gelombang + Customize)
 scripts/smoke-test.js     tes end-to-end lewat MCP

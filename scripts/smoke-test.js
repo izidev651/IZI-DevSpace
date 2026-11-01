@@ -1,5 +1,5 @@
 'use strict';
-// End-to-end smoke test: drives a running Tide Browser through its MCP server.
+// End-to-end smoke test: drives a running IZI DevSpace through its MCP server.
 // Usage: start the browser, then `npm run test:smoke` (optionally MCP_URL=...).
 const http = require('http');
 const fs = require('fs');
@@ -24,7 +24,7 @@ async function main() {
   await new Promise((r) => srv.once('listening', r));
   const pageUrl = `http://127.0.0.1:${srv.address().port}/form`;
 
-  const client = new Client({ name: 'tide-smoke-test', version: '1.0.0' });
+  const client = new Client({ name: 'izi-smoke-test', version: '1.0.0' });
   await client.connect(new StreamableHTTPClientTransport(new URL(MCP_URL)));
   const call = async (name, args = {}) => {
     const r = await client.callTool({ name, arguments: args });
@@ -56,7 +56,7 @@ async function main() {
   if (!ua.includes('Android')) throw new Error('mobile UA not applied');
   if (process.env.SMOKE_PAUSE) await new Promise((r) => setTimeout(r, Number(process.env.SMOKE_PAUSE)));
   await call('mobile_view', { enabled: false });
-  const { txt: t2 } = await call('open_tab', { url: 'tide://newtab/', background: true });
+  const { txt: t2 } = await call('open_tab', { url: 'izi://newtab/', background: true });
   await call('dock_tab', { tabId: JSON.parse(t2).id });
   if (process.env.SMOKE_PAUSE) await new Promise((r) => setTimeout(r, Number(process.env.SMOKE_PAUSE)));
   await call('dock_tab', { undock: true });

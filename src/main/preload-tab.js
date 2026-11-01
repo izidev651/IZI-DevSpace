@@ -1,8 +1,8 @@
 'use strict';
-// Only the built-in tide:// pages (e.g. the New Tab page) get a bridge.
+// Only the built-in izi:// pages (e.g. the New Tab page) get a bridge.
 const { contextBridge, ipcRenderer } = require('electron');
 
-if (location.protocol === 'tide:') {
+if (location.protocol === 'izi:') {
   contextBridge.exposeInMainWorld('tideNewTab', {
     getSettings: () => ipcRenderer.invoke('newtab:settings'),
     setSettings: (patch) => ipcRenderer.invoke('newtab:set', patch),

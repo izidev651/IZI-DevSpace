@@ -1,8 +1,17 @@
 {
-  "name": "tide-browser",
-  "productName": "Tide Browser",
+  "name": "izi-devspace",
+  "productName": "IZI DevSpace",
   "version": "0.1.0",
-  "description": "Custom Chromium-based browser with Spaces, Groups, dev tools and a built-in MCP server",
+  "description": "IZI DevSpace \u2014 custom Chromium-based browser with Spaces, Groups, dev tools and a built-in MCP server",
+  "author": {
+    "name": "IZI Dev",
+    "email": "izidev651@users.noreply.github.com"
+  },
+  "homepage": "https://github.com/izidev651/IZI-DevSpace",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/izidev651/IZI-DevSpace.git"
+  },
   "main": "src/main/main.js",
   "license": "MIT",
   "scripts": {
@@ -13,9 +22,17 @@
     "dist:mac": "electron-builder --mac",
     "dist:linux": "electron-builder --linux"
   },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "electron": "^45.2.1",
+    "electron-builder": "^26.18.0"
+  },
   "build": {
-    "appId": "com.tide.browser",
-    "productName": "Tide Browser",
+    "appId": "com.izidev.devspace",
+    "productName": "IZI DevSpace",
     "directories": {
       "output": "dist"
     },
@@ -43,19 +60,12 @@
         "deb"
       ],
       "icon": "assets/icon.png",
-      "category": "Network"
+      "category": "Network",
+      "maintainer": "IZI Dev <izidev651@users.noreply.github.com>"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
     }
-  },
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.32.2",
-    "zod": "^3.25.76"
-  },
-  "devDependencies": {
-    "electron": "^45.2.1",
-    "electron-builder": "^26.18.0"
   }
 }

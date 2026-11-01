@@ -26,9 +26,9 @@ function defaultState() {
   const g1 = { id: uid('group'), spaceId: personal.id, name: 'Browse', icon: { type: 'letter', value: 'B' }, color: '#1fc7b6', activeTabId: null, split: null };
   const g2 = { id: uid('group'), spaceId: personal.id, name: 'Google', icon: { type: 'letter', value: 'G' }, color: '#64748b', activeTabId: null, split: null };
   const g3 = { id: uid('group'), spaceId: work.id, name: 'Main', icon: { type: 'letter', value: 'M' }, color: '#3b82f6', activeTabId: null, split: null };
-  const t1 = { id: uid('tab'), groupId: g1.id, url: 'tide://newtab/', title: 'New tab', favicon: null, pinned: false };
+  const t1 = { id: uid('tab'), groupId: g1.id, url: 'izi://newtab/', title: 'New tab', favicon: null, pinned: false };
   const t2 = { id: uid('tab'), groupId: g2.id, url: 'https://www.google.com/', title: 'Google', favicon: null, pinned: false };
-  const t3 = { id: uid('tab'), groupId: g3.id, url: 'tide://newtab/', title: 'New tab', favicon: null, pinned: false };
+  const t3 = { id: uid('tab'), groupId: g3.id, url: 'izi://newtab/', title: 'New tab', favicon: null, pinned: false };
   g1.activeTabId = t1.id; g2.activeTabId = t2.id; g3.activeTabId = t3.id;
   personal.activeGroupId = g1.id; work.activeGroupId = g3.id;
   return {
@@ -53,7 +53,7 @@ function deepMerge(base, extra) {
 
 class Store {
   constructor(dir) {
-    this.file = path.join(dir, 'tide-state.json');
+    this.file = path.join(dir, 'devspace-state.json');
     this.data = this._load();
     this._timer = null;
   }

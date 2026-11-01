@@ -19,7 +19,7 @@ const SEARCH_ENGINES = {
 function resolveInput(input, engine = 'google') {
   const text = String(input || '').trim();
   if (!text) return null;
-  if (/^(https?|file|tide|about|data|chrome|view-source):/i.test(text)) return text;
+  if (/^(https?|file|izi|about|data|chrome|view-source):/i.test(text)) return text;
   if (/^localhost(:\d+)?(\/.*)?$/i.test(text) || /^\d{1,3}(\.\d{1,3}){3}(:\d+)?(\/.*)?$/.test(text)) return 'http://' + text;
   if (!/\s/.test(text) && /^[\w-]+(\.[\w-]+)+(:\d+)?(\/.*)?$/.test(text)) return 'https://' + text;
   const e = SEARCH_ENGINES[engine] || SEARCH_ENGINES.google;

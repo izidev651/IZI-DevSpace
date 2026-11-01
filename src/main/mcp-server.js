@@ -179,7 +179,7 @@ function registerTools(server, browser, log) {
     throw new Error('Timed out waiting for ' + selector);
   });
 
-  tool('capture_full_page', 'Capture the whole page and save it as PNG in Downloads/Tide Captures. Returns the file path.', { tabId }, async ({ tabId: id }) => {
+  tool('capture_full_page', 'Capture the whole page and save it as PNG in Downloads/IZI DevSpace Captures. Returns the file path.', { tabId }, async ({ tabId: id }) => {
     const { t } = await browser.wcFor(id);
     const file = await browser.capture(t);
     if (!file) throw new Error('Capture failed');
@@ -250,8 +250,8 @@ class McpController {
   }
 
   newServer() {
-    const server = new McpServer({ name: 'tide-browser', version: require('../../package.json').version }, {
-      instructions: 'Tide Browser MCP: control the user\'s browser. Typical flow: list_tabs/open_tab -> snapshot -> click/type by ref -> get_page_text/screenshot. Tabs may be sleeping; tools wake them automatically.',
+    const server = new McpServer({ name: 'izi-devspace', version: require('../../package.json').version }, {
+      instructions: 'IZI DevSpace MCP: control the user\'s browser. Typical flow: list_tabs/open_tab -> snapshot -> click/type by ref -> get_page_text/screenshot. Tabs may be sleeping; tools wake them automatically.',
     });
     registerTools(server, this.browser, (e) => this.browser.logMcp(e));
     return server;
@@ -269,7 +269,7 @@ class McpController {
         if (!allowedHosts.includes(req.headers.host || '')) { res.writeHead(403).end('Forbidden host'); return; }
         const origin = req.headers.origin;
         if (origin && !/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(origin)) { res.writeHead(403).end('Forbidden origin'); return; }
-        if (url.pathname === '/health') { res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify({ ok: true, name: 'tide-browser' })); return; }
+        if (url.pathname === '/health') { res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify({ ok: true, name: 'izi-devspace' })); return; }
         if (url.pathname !== '/mcp') { res.writeHead(404).end('Not found'); return; }
         if (this.cfg.token && req.headers.authorization !== `Bearer ${this.cfg.token}`) { res.writeHead(401).end('Unauthorized'); return; }
 
