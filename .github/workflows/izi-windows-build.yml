@@ -147,8 +147,10 @@ jobs:
           npm run package
           ls -la ./dist
           mkdir -p out
-          cp ./dist/*.installer.exe out/IZI-DevSpace-Setup-x64.exe
-          cp "$(ls ./dist/*.win64.zip | head -n1)" out/IZI-DevSpace-x64-portable.zip
+          # dist/ holds several *.installer*.exe and *.zip files; pick the exact ones.
+          cp ./dist/zen.installer.exe out/IZI-DevSpace-Setup-x64.exe
+          cp "$(ls ./dist/*.en-US.win64.zip | grep -v xpt_artifacts | head -n1)" out/IZI-DevSpace-x64-portable.zip
+          ls -la out
 
       - name: Upload Windows build
         uses: actions/upload-artifact@v5
