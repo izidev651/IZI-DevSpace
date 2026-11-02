@@ -5,6 +5,9 @@
 const { gZenBoostsManager } = ChromeUtils.importESModule(
   "resource:///modules/zen/boosts/ZenBoostsManager.sys.mjs"
 );
+const { ZenShareClient } = ChromeUtils.importESModule(
+  "resource:///modules/zen/share/ZenShareClient.sys.mjs"
+);
 
 export class nsZenBoostEditor {
   doc = null;
@@ -117,6 +120,7 @@ export class nsZenBoostEditor {
       .addEventListener("click", this.onCodeButtonPressed.bind(this));
     const shareButton = this.doc.getElementById("zen-boost-share");
     shareButton.addEventListener("click", this.onShareBoostPressed.bind(this));
+    shareButton.hidden = !ZenShareClient.isConfigured;
     this.doc
       .getElementById("zen-boost-back")
       .addEventListener("click", this.onCodeBackButtonPressed.bind(this));

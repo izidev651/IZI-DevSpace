@@ -45,7 +45,10 @@ class nsZenShareManager extends nsZenDOMOperatedFeature {
   }
 
   get enabled() {
-    return !gZenWorkspaces.privateWindowOrDisabled;
+    return (
+      lazy.ZenShareClient.isConfigured &&
+      !gZenWorkspaces.privateWindowOrDisabled
+    );
   }
 
   // Mark: sharing

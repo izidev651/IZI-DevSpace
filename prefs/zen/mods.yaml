@@ -8,14 +8,21 @@
 - name: zen.mods.auto-update-days
   value: 20 # In days
 
+# IZI DevSpace: no mod store (Zen's theme store is not used). Base URL of a
+# store's themes/ folder; empty disables store lookups.
+- name: zen.mods.store-url
+  value: ""
+
+# IZI DevSpace: never poll a mod store on its own.
 - name: zen.mods.auto-update
-  value: "@cond"
-  condition: "defined(MOZILLA_OFFICIAL)"
+  value: false
 
 # === Mark: Site Injection ===
 
+# IZI DevSpace: zen-browser.app gets no marketplace actor. The pattern must
+# stay a valid match pattern, so it points at a reserved .invalid host.
 - name: zen.injections.match-urls
-  value: "https://zen-browser.app/*"
+  value: "https://mods.invalid/*"
   locked: true
   condition: "defined(MOZILLA_OFFICIAL)"
 

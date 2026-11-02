@@ -26,10 +26,27 @@ Jika build pertama kena batas 6 jam, cukup *Re-run* — bagian yang sudah dikomp
 
 ## Perbedaan dari Zen
 
-- `surfer.json`: nama/vendor/brand → IZI DevSpace, repo update → izidev651/IZI-DevSpace, `updateHostname` → `updates.invalid` (tidak pernah mengambil update Zen resmi)
+- `surfer.json`: nama/vendor/brand → IZI DevSpace, repo → izidev651/IZI-DevSpace
 - `configs/common/mozconfig`: basename `IZIDevSpace` (profil terpisah dari Zen), `IZI_FAST_BUILD` melewati clang-plugin
 - `configs/branding/*`: logo IZI DevSpace
 - Workflow Zen diganti satu workflow Windows untuk runner gratis
+
+### Tidak terhubung ke layanan Zen
+
+Build IZI tidak menghubungi server Zen sama sekali:
+
+| Bagian | Di Zen | Di IZI DevSpace |
+|---|---|---|
+| Update otomatis | `updates.zen-browser.app` + kunci MAR Zen | updater tidak dibangun (`--disable-updater`), host `updates.invalid`, kunci MAR Zen dihapus |
+| Halaman welcome / what's new | `zen-browser.app/welcome`, `/whatsnew`, `/privacy-policy` | tidak ada (`src/browser/branding/release/pref/firefox-branding.js`) |
+| Release notes / unduh manual | `zen-browser.app` | GitHub Releases IZI |
+| Share Space/Folder/Boost | `share.zen-browser.app` | mati; muncul lagi jika `zen.share.base-url` diisi |
+| Mods | toko `zen-browser.github.io`, injeksi di `zen-browser.app`, auto-update | tanpa toko (`zen.mods.store-url` kosong), injeksi ke host `.invalid`, auto-update mati; impor manual tetap bisa |
+| Tautan donasi, privacy, issue | Zen | donasi & privacy dihapus, issue → repo IZI |
+| Installer (Add/Remove Programs, survei uninstall) | Zen | repo IZI (`src/browser/branding/release/branding.nsi`) |
+| `about:credits` | `zen-browser.app/about` | repo IZI |
+
+Paket npm `@zen-browser/surfer` tetap dipakai sebagai alat build.
 
 ## MCP Server
 

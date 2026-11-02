@@ -68,6 +68,14 @@ class nsZenShareClient {
     return lazy.gBaseUrl;
   }
 
+  /**
+   * Whether a share server is configured. IZI DevSpace ships without one, so
+   * sharing stays off until zen.share.base-url is set.
+   */
+  get isConfigured() {
+    return !!this.#baseUrl;
+  }
+
   #authHeaders() {
     // A secret key authorizes on its own and makes the share permanent. Never
     // send both keys.
@@ -109,6 +117,9 @@ class nsZenShareClient {
   }
 
   async #request(url, options, timeoutMs = READ_TIMEOUT_MS) {
+    if (!this.isConfigured) {
+      throw new ZenShareError("network", "no share server configured");
+    }
     const controller = new AbortController();
     const timer = lazy.setTimeout(() => controller.abort(), timeoutMs);
     let response;

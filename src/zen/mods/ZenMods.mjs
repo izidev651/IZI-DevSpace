@@ -319,8 +319,12 @@ class nsZenMods extends nsZenPreloadedFeature {
   }
 
   #composeModApiUrl(modId) {
-    // keeping theme here as it would require changes to CI to change the name
-    return `https://zen-browser.github.io/theme-store/themes/${modId}/theme.json`;
+    // IZI DevSpace: no mod store by default (Zen's theme store is not used).
+    // zen.mods.store-url is a base such as https://host/themes; empty = off.
+    const base = Services.prefs
+      .getStringPref("zen.mods.store-url", "")
+      .replace(/\/+$/, "");
+    return base ? `${base}/${modId}/theme.json` : null;
   }
 
   async #downloadUrlToFile(url, path, maxRetries = 3, retryDelayMs = 500) {
@@ -733,6 +737,9 @@ class nsZenMods extends nsZenPreloadedFeature {
 
   async requestMod(modId) {
     const url = this.#composeModApiUrl(modId);
+    if (!url) {
+      return null;
+    }
 
     console.warn(`[ZenMods]: Fetching mod ${modId} info from ${url}`);
 

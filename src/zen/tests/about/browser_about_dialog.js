@@ -80,19 +80,17 @@ add_task(async function test_about_links() {
   const win = await openZenAboutDialog();
   const doc = win.document;
 
-  is(
-    doc.getElementById("zen-about-donate").href,
-    "https://www.zen-browser.app/donate",
-    "Donate link points at the donation page"
-  );
+  ok(!doc.getElementById("zen-about-donate"), "There is no donate link");
   is(
     doc.getElementById("zen-about-issues").href,
-    "https://github.com/zen-browser/desktop/issues",
+    "https://github.com/izidev651/IZI-DevSpace/issues",
     "Issues link points at the tracker"
   );
   const releaseNotes = doc.getElementById("zen-about-release-notes");
   ok(
-    releaseNotes.href.includes("release-notes"),
+    releaseNotes.href.startsWith(
+      "https://github.com/izidev651/IZI-DevSpace/releases"
+    ),
     `Release notes link points at the release notes: ${releaseNotes.href}`
   );
 

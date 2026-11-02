@@ -33,7 +33,8 @@ fi
 
 . $HOME/.cargo/env
 
-bash ./scripts/mar_sign.sh -i
+# IZI DevSpace builds without the updater, so Zen's MAR signing key
+# (build/signing/public_key.der) is not imported.
 
 ulimit -n 4096
 

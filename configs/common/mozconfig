@@ -15,6 +15,10 @@ export MOZ_OFFICIAL_BRANDING_DIRECTORY=${brandingDir}
 
 ac_add_options --with-distribution-id=app.izi-devspace
 
+# No built-in updater: IZI DevSpace never pulls Zen (or any) MAR updates.
+# This also turns off the Windows maintenance service.
+ac_add_options --disable-updater
+
 # Uncomment if builds are too resource hungry
 # mk_add_options MOZ_MAKE_FLAGS="-j4"
 # ac_add_options --enable-linker=gold
