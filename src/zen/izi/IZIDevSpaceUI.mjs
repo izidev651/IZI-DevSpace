@@ -69,24 +69,47 @@ function firstGrapheme(text) {
 
 class nsIZIDevSpaceUI extends nsZenDOMOperatedFeature {
   #strip = null;
+  #tabStrip = null;
+  #tabsBox = null;
+  #pinnedBox = null;
   #spacesBox = null;
   #groupsBox = null;
   #renderQueued = false;
+  #tabsQueued = false;
+  stage = "constructed";
+  errors = [];
+
+  #err(where, e) {
+    this.errors.push(`${where}: ${e?.message || e}`);
+    console.error(`[IZI] ${where}`, e);
+  }
 
   async init() {
     if (!Services.prefs.getBoolPref(PREF_ENABLED, true)) return;
     if (PrivateBrowsingUtils.isWindowPrivate(window)) return;
-    try {
-      this.#buildStrip();
-      this.#setupToolbarWidgets();
-      await gZenWorkspaces.promiseInitialized;
-      await this.#migrateOnce();
-      this.#listen();
-      this.render();
-      document.documentElement.setAttribute("izi-devspace", "true");
-    } catch (e) {
-      console.error("[IZI] init failed", e);
-    }
+    const step = async (name, fn) => {
+      this.stage = name;
+      try {
+        await fn();
+      } catch (e) {
+        this.#err(name, e);
+      }
+    };
+    await step("strip", () => this.#buildStrip());
+    await step("tabstrip", () => this.#buildTabStrip());
+    await step("widgets", () => this.#setupToolbarWidgets());
+    document.documentElement.setAttribute("izi-devspace", "true");
+    await step("wait-workspaces", () =>
+      Promise.race([
+        gZenWorkspaces.promiseInitialized,
+        new Promise((r) => setTimeout(() => { this.errors.push("workspaces init > 15s, continuing"); r(); }, 15000)),
+      ])
+    );
+    await step("migrate", () => this.#migrateOnce());
+    await step("listen", () => this.#listen());
+    this.stage = "ready";
+    this.render();
+    this.renderTabs();
   }
 
   // ------------------------------------------------------------------ data
@@ -150,7 +173,7 @@ class nsIZIDevSpaceUI extends nsZenDOMOperatedFeature {
   }
 
   #listen() {
-    const rerender = () => this.render();
+    const rerender = () => { this.render(); this.renderTabs(); };
     window.addEventListener("ZenWorkspacesUIUpdate", rerender);
     window.addEventListener("ZenWorkspaceDataChanged", rerender);
     window.addEventListener("ZenWorkspaceAttached", rerender);
@@ -158,6 +181,10 @@ class nsIZIDevSpaceUI extends nsZenDOMOperatedFeature {
     gBrowser.tabContainer.addEventListener("TabClose", rerender);
     gBrowser.tabContainer.addEventListener("TabBrowserDiscarded", rerender);
     gBrowser.tabContainer.addEventListener("TabBrowserInserted", rerender);
+    for (const ev of ["TabSelect", "TabMove", "TabAttrModified", "TabPinned", "TabUnpinned", "TabShow", "TabHide"]) {
+      gBrowser.tabContainer.addEventListener(ev, () => this.renderTabs());
+    }
+    window.addEventListener("sizemodechange", () => this.renderTabs());
     const obs = { observe: rerender };
     Services.obs.addObserver(obs, "contextual-identity-created");
     Services.obs.addObserver(obs, "contextual-identity-updated");
@@ -273,6 +300,170 @@ class nsIZIDevSpaceUI extends nsZenDOMOperatedFeature {
     const themeImg = document.querySelector("#izi-btn-theme img");
     if (themeImg) themeImg.src = `${ICONS}${dark ? "moon" : "sun"}.svg`;
     this.#updateToolbarState();
+  }
+
+
+  // ------------------------------------------------------------- tab strip
+  // Zen only lays tabs out vertically; IZI shows the current Group's tabs in a
+  // horizontal strip above the address bar and hides Zen's sidebar.
+  #buildTabStrip() {
+    const wrapper = document.getElementById("zen-appcontent-wrapper");
+    this.#pinnedBox = h("div", { id: "izi-pinned" });
+    this.#tabsBox = h("div", { id: "izi-tabs" });
+    const isMac = AppConstants.platform == "macosx";
+    const winBtn = (id, icon, tip, fn) =>
+      h("button", { id, class: "izi-win-btn", title: tip, on: { click: fn } }, iconImg(icon));
+    const controls = isMac
+      ? null
+      : h(
+          "div",
+          { id: "izi-win-controls" },
+          winBtn("izi-win-min", "win-min", "Minimize", () => window.minimize()),
+          winBtn("izi-win-max", "win-max", "Maximize", () =>
+            window.windowState === window.STATE_MAXIMIZED ? window.restore() : window.maximize()
+          ),
+          winBtn("izi-win-close", "win-close", "Close", () => window.close())
+        );
+    this.#tabStrip = h(
+      "div",
+      { id: "izi-tabstrip" },
+      this.#pinnedBox,
+      this.#tabsBox,
+      h("button", { id: "izi-new-tab", class: "izi-tab-btn", title: "New tab (Ctrl+T)", on: { click: () => BrowserCommands.openTab() } }, iconImg("plus")),
+      h("div", { class: "izi-drag-spacer", on: { dblclick: () => (window.windowState === window.STATE_MAXIMIZED ? window.restore() : window.maximize()) } }),
+      controls
+    );
+    wrapper.prepend(this.#tabStrip);
+    this.#setupTabDnD();
+    // Back / forward / reload live in Zen's (now hidden) sidebar; put them in the nav-bar.
+    if (!Services.prefs.getBoolPref("izi.toolbar.nav-placed", false)) {
+      ["back-button", "forward-button", "stop-reload-button"].forEach((id, i) => {
+        try { CustomizableUI.addWidgetToArea(id, CustomizableUI.AREA_NAVBAR, i); } catch (e) { this.#err(`place ${id}`, e); }
+      });
+      Services.prefs.setBoolPref("izi.toolbar.nav-placed", true);
+    }
+  }
+
+  get stripTabs() {
+    return gBrowser.visibleTabs.filter(
+      (t) => !t.hasAttribute("zen-empty-tab") && !t.hasAttribute("zen-glance-tab") && !t.closing
+    );
+  }
+
+  renderTabs() {
+    if (this.#tabsQueued || !this.#tabsBox) return;
+    this.#tabsQueued = true;
+    window.requestAnimationFrame(() => {
+      this.#tabsQueued = false;
+      try {
+        this.#renderTabsNow();
+      } catch (e) {
+        this.#err("renderTabs", e);
+      }
+    });
+  }
+
+  #favicon(tab) {
+    if (tab.hasAttribute("busy")) return h("span", { class: "izi-spinner" });
+    const src = tab.getAttribute("image");
+    return src ? h("img", { class: "izi-fav", src, alt: "" }) : iconImg("globe", "izi-fav izi-ic");
+  }
+
+  #renderTabsNow() {
+    const tabs = this.stripTabs;
+    const pinned = tabs.filter((t) => t.pinned || t.hasAttribute("zen-essential"));
+    const normal = tabs.filter((t) => !t.pinned && !t.hasAttribute("zen-essential"));
+    const common = (t) => ({
+      "data-tab-id": t.linkedPanel || t.id,
+      draggable: "true",
+      title: `${t.label}`,
+      on: {
+        mousedown: (e) => { if (e.button === 0 && !e.target.closest(".izi-tab-close")) gBrowser.selectedTab = t; },
+        auxclick: (e) => { if (e.button === 1) gBrowser.removeTab(t, { animate: true }); },
+        contextmenu: (e) => this.tabMenu(e, t),
+      },
+    });
+    this.#pinnedBox.replaceChildren(
+      ...pinned.map((t) => {
+        const el = h("div", { class: "izi-pin" + (t.selected ? " active" : "") + (t.hasAttribute("pending") ? " sleeping" : ""), ...common(t) }, this.#favicon(t));
+        el._tab = t;
+        return el;
+      })
+    );
+    this.#tabsBox.replaceChildren(
+      ...normal.map((t) => {
+        const el = h(
+          "div",
+          {
+            class: "izi-tab" + (t.selected ? " active" : "") + (t.hasAttribute("pending") ? " sleeping" : "") + (t.hasAttribute("split-view") ? " docked" : ""),
+            ...common(t),
+          },
+          this.#favicon(t),
+          h("span", { class: "izi-tab-title" }, t.label || ""),
+          t.hasAttribute("soundplaying") ? iconImg("volume", "izi-ic izi-audio") : null,
+          t.hasAttribute("pending") ? h("span", { class: "izi-zz" }, "zᶻ") : null,
+          h("button", { class: "izi-tab-close", title: "Close tab (Ctrl+W)", on: { click: (e) => { e.stopPropagation(); gBrowser.removeTab(t, { animate: true }); } } }, iconImg("x"))
+        );
+        el._tab = t;
+        return el;
+      })
+    );
+    const maxImg = document.querySelector("#izi-win-max img");
+    if (maxImg) maxImg.src = `${ICONS}${window.windowState === window.STATE_MAXIMIZED ? "win-restore" : "win-max"}.svg`;
+  }
+
+  #setupTabDnD() {
+    let dragged = null;
+    const clear = () => this.#tabStrip.querySelectorAll(".drop-before, .drop-after").forEach((x) => x.classList.remove("drop-before", "drop-after"));
+    this.#tabStrip.addEventListener("dragstart", (e) => {
+      const el = e.target.closest?.(".izi-tab, .izi-pin");
+      if (!el) return;
+      dragged = el._tab;
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/x-izi-tab", "1");
+    });
+    this.#tabStrip.addEventListener("dragover", (e) => {
+      const el = e.target.closest?.(".izi-tab, .izi-pin");
+      if (!dragged || !el) return;
+      e.preventDefault();
+      clear();
+      const r = el.getBoundingClientRect();
+      el.classList.add(e.clientX < r.left + r.width / 2 ? "drop-before" : "drop-after");
+    });
+    this.#tabStrip.addEventListener("drop", (e) => {
+      const el = e.target.closest?.(".izi-tab, .izi-pin");
+      clear();
+      if (!dragged || !el || el._tab === dragged) return;
+      e.preventDefault();
+      const r = el.getBoundingClientRect();
+      const before = e.clientX < r.left + r.width / 2;
+      try {
+        if (before && gBrowser.moveTabBefore) gBrowser.moveTabBefore(dragged, el._tab);
+        else if (!before && gBrowser.moveTabAfter) gBrowser.moveTabAfter(dragged, el._tab);
+        else gBrowser.moveTabTo(dragged, { tabIndex: el._tab._tPos + (before ? 0 : 1) });
+      } catch (err) {
+        this.#err("moveTab", err);
+      }
+      this.renderTabs();
+    });
+    this.#tabStrip.addEventListener("dragend", () => { dragged = null; clear(); });
+  }
+
+  tabMenu(event, tab) {
+    const groups = this.groups.filter((g) => g.uuid !== tab.getAttribute("zen-workspace-id"));
+    this.#popup("izi-tab-menu", [
+      { label: "New Tab to the Right", run: () => { const t = gBrowser.addTrustedTab(BROWSER_NEW_TAB_URL); gBrowser.moveTabAfter?.(t, tab); } },
+      { label: "Reload", run: () => gBrowser.reloadTab(tab) },
+      { label: "Duplicate", run: () => gBrowser.duplicateTab(tab) },
+      { label: tab.pinned ? "Unpin Tab" : "Pin Tab", run: () => (tab.pinned ? gBrowser.unpinTab(tab) : gBrowser.pinTab(tab)) },
+      "-",
+      { label: tab.hasAttribute("pending") ? "Wake Tab" : "Sleep Tab", run: () => (tab.hasAttribute("pending") ? (gBrowser.selectedTab = tab) : gBrowser.explicitUnloadTabs([tab])) },
+      { label: "Dock Beside Active Tab", disabled: tab.selected, run: () => gZenViewSplitter.splitTabs([gBrowser.selectedTab, tab], "vsep", 0) },
+      { label: "Move to Group", submenu: groups.length ? groups.map((g) => ({ label: `${this.spaces.find((s) => s.id === (g.containerTabId || 0))?.name || "Space"} › ${g.name}`, run: () => gZenWorkspaces.moveTabToWorkspace(tab, g.uuid) })) : [{ label: "No other Group", disabled: true, run() {} }] },
+      "-",
+      { label: "Close Tab", run: () => gBrowser.removeTab(tab, { animate: true }) },
+      { label: "Close Other Tabs", run: () => this.stripTabs.filter((t) => t !== tab && !t.pinned && !t.hasAttribute("zen-essential")).forEach((t) => gBrowser.removeTab(t)) },
+    ], event);
   }
 
   // --------------------------------------------------------------- actions

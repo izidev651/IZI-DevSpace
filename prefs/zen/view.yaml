@@ -14,7 +14,7 @@
   condition: "defined(XP_MACOSX)"
 
 - name: zen.view.use-single-toolbar
-  value: false # IZI DevSpace: separate address/tool bar
+  value: false # IZI DevSpace: address bar above the page (IZI draws its own tab strip)
 
 - name: zen.view.sidebar-expanded
   value: true

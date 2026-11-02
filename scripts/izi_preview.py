@@ -64,6 +64,11 @@ def run_steps():
         widgets: ['izi-devtools-button','izi-mobile-button','screenshot-button','developer-button','izi-dock-button','izi-sleep-button']
           .map(id => [id, !!document.getElementById(id)]),
         vertical: Services.prefs.getBoolPref('zen.tabs.vertical'),
+        stage: ui.stage, errors: ui.errors,
+        tabstrip: !!document.getElementById('izi-tabstrip'),
+        sidebarHidden: getComputedStyle(document.getElementById('navigator-toolbox')).display === 'none',
+        winControls: !!document.getElementById('izi-win-controls') || AppConstants.platform == 'macosx',
+        backInNavbar: !!document.querySelector('#nav-bar #back-button'),
         title: document.title,
       };
     """)
@@ -71,6 +76,11 @@ def run_steps():
     check("strip present", state["strip"])
     check("Personal + Work spaces", {"Personal", "Work"} <= set(state["spaces"]), state["spaces"])
     check("toolbar widgets present", all(v for _, v in state["widgets"]), state["widgets"])
+    check("init reached ready", state.get("stage") == "ready" and not state.get("errors"), [state.get("stage"), state.get("errors")])
+    check("horizontal tab strip present", state.get("tabstrip"))
+    check("Zen vertical sidebar hidden", state.get("sidebarHidden"))
+    check("window controls present", state.get("winControls"))
+    check("back button in nav-bar", state.get("backInNavbar"))
     shot("01-start")
 
     # Open a few pages (local data: URLs, no network needed)
@@ -80,6 +90,8 @@ def run_steps():
       gBrowser.addTrustedTab(page('Docs', '#3b82f6'), { inBackground: true });
     """)
     time.sleep(3)
+    n = js("return [document.querySelectorAll('#izi-tabs .izi-tab').length, window.gIZIDevSpaceUI.stripTabs.length];")
+    check("tab strip mirrors the Group's tabs", n[0] >= 2 and n[0] <= n[1], n)
     shot("02-tabs")
 
     # DevTools
