@@ -232,10 +232,19 @@ export class IZIDevSpaceChild extends JSWindowActorChild {
     const r = el.getBoundingClientRect();
     const x = r.left + r.width / 2;
     const y = r.top + r.height / 2;
-    const utils = this.contentWindow.windowUtils;
-    utils.sendMouseEvent("mousemove", x, y, 0, 0, 0);
-    utils.sendMouseEvent("mousedown", x, y, 0, 1, 0);
-    utils.sendMouseEvent("mouseup", x, y, 0, 1, 0);
+    const win = this.contentWindow;
+    if (typeof win.synthesizeMouseEvent === "function") {
+      // Firefox 15x+: trusted mouse events via Window.synthesizeMouseEvent.
+      const opts = { toWindow: true };
+      win.synthesizeMouseEvent("mousemove", x, y, { button: 0, clickCount: 0 }, opts);
+      win.synthesizeMouseEvent("mousedown", x, y, { button: 0, clickCount: 1 }, opts);
+      win.synthesizeMouseEvent("mouseup", x, y, { button: 0, clickCount: 1 }, opts);
+    } else {
+      const utils = win.windowUtils;
+      utils.sendMouseEvent("mousemove", x, y, 0, 0, 0);
+      utils.sendMouseEvent("mousedown", x, y, 0, 1, 0);
+      utils.sendMouseEvent("mouseup", x, y, 0, 1, 0);
+    }
     return { clicked: el.localName, url: this.document.location.href, title: this.document.title };
   }
 
