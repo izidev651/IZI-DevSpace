@@ -4,10 +4,8 @@
 # `zen-preview` branch so changes can be reviewed without a local build.
 name: Zen Linux preview
 
+# Manual only (Windows is the primary target; see izi-windows-build.yml).
 on:
-  push:
-    branches: [zen]
-    paths-ignore: ['**.md', 'docs/**']
   workflow_dispatch:
 
 concurrency:

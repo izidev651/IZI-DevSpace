@@ -20,6 +20,10 @@ client = Marionette(host="127.0.0.1", port=2828, startup_timeout=120)
 client.start_session()
 client.set_context(client.CONTEXT_CHROME)
 client.timeout.script = 60
+try:
+    client.set_window_rect(x=0, y=0, width=1440, height=900)
+except Exception as e:
+    print("could not resize window:", e)
 
 def js(src, args=None):
     return client.execute_script(src, script_args=args or [], new_sandbox=False)

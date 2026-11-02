@@ -75,12 +75,8 @@ jobs:
           path: ~/win-cross
           key: win-cross-vs2026-v1
 
-      - name: Setup Windows cross toolchain
-        if: steps.cache-win-cross.outputs.cache-hit != 'true'
+      - name: Install cross-build system packages
         run: |
-          set -x
-          mkdir -p ~/win-cross
-          cd engine/
           sudo apt-get -o Acquire::Retries=3 install -y python3-launchpadlib
           sudo add-apt-repository -y ppa:savoury1/backports
           sudo apt-get -o Acquire::Retries=3 update
@@ -88,14 +84,17 @@ jobs:
             cabextract curl cmake flex gawk gcc-multilib git gnupg jq libbz2-dev libexpat1-dev libffi-dev libncursesw5-dev \
             libsqlite3-dev libssl-dev libtool libucl-dev libxml2-dev msitools ninja-build openssh-client p7zip-full pkg-config \
             procps python3-requests python3-toml scons subversion tar unzip uuid uuid-dev wget zip zlib1g-dev aria2
+
+      - name: Download wine + Visual Studio SDK (cache miss only)
+        if: steps.cache-win-cross.outputs.cache-hit != 'true'
+        run: |
+          set -x
+          mkdir -p ~/win-cross
+          cd engine/
           aria2c "https://firefox-ci-tc.services.mozilla.com/api/index/v1/task/gecko.cache.level-3.toolchains.v3.linux64-wine.latest/artifacts/public/build/wine.tar.zst" -o wine.tar.zst
           tar --zstd -xf wine.tar.zst -C ~/win-cross
           rm wine.tar.zst
           ./mach python --virtualenv build taskcluster/scripts/misc/get_vs.py build/vs/vs2026.yaml ~/win-cross/vs2026
-
-      - name: Install cross-build packages (cache hit)
-        if: steps.cache-win-cross.outputs.cache-hit == 'true'
-        run: sudo apt-get -o Acquire::Retries=3 install -y msitools p7zip-full aria2 jq
 
       - name: Import patches
         run: |
@@ -162,3 +161,59 @@ jobs:
       - name: sccache stats
         if: always()
         run: sccache --show-stats || true
+
+  windows-preview:
+    name: UI preview on Windows
+    needs: windows-x64
+    runs-on: windows-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/download-artifact@v5
+        with:
+          name: IZI-DevSpace-Windows-x64
+          path: dl
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run UI checks + screenshots
+        shell: pwsh
+        run: |
+          python -m pip install marionette_driver
+          Expand-Archive dl/IZI-DevSpace-x64-portable.zip -DestinationPath app
+          $exe = Get-ChildItem app -Recurse -Filter zen.exe | Select-Object -First 1
+          $prof = Join-Path $env:RUNNER_TEMP "izi-profile"
+          New-Item -ItemType Directory -Force -Path $prof | Out-Null
+          @(
+            'user_pref("zen.welcome-screen.seen", true);',
+            'user_pref("browser.shell.checkDefaultBrowser", false);',
+            'user_pref("browser.startup.homepage_override.mstone", "ignore");',
+            'user_pref("datareporting.policy.dataSubmissionEnabled", false);',
+            'user_pref("toolkit.telemetry.reportingpolicy.firstRun", false);'
+          ) | Set-Content -Path (Join-Path $prof "user.js")
+          Start-Process -FilePath $exe.FullName -ArgumentList "--marionette","--no-remote","--profile",$prof,"about:blank"
+          New-Item -ItemType Directory -Force -Path preview-out | Out-Null
+          python scripts/izi_preview.py preview-out
+          if ($LASTEXITCODE -ne 0) { Write-Host "preview script exit code $LASTEXITCODE" }
+          Get-Process zen -ErrorAction SilentlyContinue | Stop-Process -Force
+          Get-ChildItem preview-out
+
+      - name: Publish to zen-preview branch
+        if: always()
+        shell: bash
+        run: |
+          set -x
+          [ -d preview-out ] || exit 0
+          cd preview-out
+          printf '# IZI DevSpace — UI preview (Windows)\n\nCommit: %s\nRun: %s/%s/actions/runs/%s\n' "$GITHUB_SHA" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > README.md
+          git init -q -b zen-preview
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "UI preview (Windows) for $GITHUB_SHA"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" zen-preview
