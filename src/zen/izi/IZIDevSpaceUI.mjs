@@ -15,6 +15,24 @@
 import { nsZenDOMOperatedFeature } from "chrome://browser/content/zen-components/ZenCommonUtils.mjs";
 
 const HTML_NS = "http://www.w3.org/1999/xhtml";
+const lazy = {};
+ChromeUtils.defineESModuleGetters(lazy, {
+  IZIMcpServer: "resource:///modules/izi/IZIMcpServer.sys.mjs",
+});
+
+// Content actor for Fake Fill and MCP page operations (registered once per app).
+function registerIZIActor() {
+  try {
+    ChromeUtils.registerWindowActor("IZIDevSpace", {
+      parent: { esModuleURI: "resource:///modules/izi/IZIDevSpaceParent.sys.mjs" },
+      child: { esModuleURI: "resource:///modules/izi/IZIDevSpaceChild.sys.mjs" },
+      allFrames: true,
+      messageManagerGroups: ["browsers"],
+    });
+  } catch (e) {
+    if (e.name !== "NotSupportedError") throw e; // already registered by another window
+  }
+}
 const ICONS = "chrome://browser/content/izi/icons/";
 const PREF_ENABLED = "izi.ui.enabled";
 const PREF_PLACED = "izi.toolbar.placed";
@@ -103,6 +121,8 @@ class nsIZIDevSpaceUI extends nsZenDOMOperatedFeature {
     await step("tabstrip", () => this.#buildTabStrip());
     await step("widgets", () => this.#setupToolbarWidgets());
     await step("newtab", () => this.#buildNewTab());
+    await step("actor", () => registerIZIActor());
+    await step("mcp", () => this.#setupMcp());
     document.documentElement.setAttribute("izi-devspace", "true");
     await step("wait-workspaces", () =>
       Promise.race([
@@ -217,7 +237,7 @@ class nsIZIDevSpaceUI extends nsZenDOMOperatedFeature {
       tool("izi-btn-tabs", "tabs", "Tab list", (e) => this.openTabList(e)),
       tool("izi-btn-notes", "notes", "Notes", (e) => this.openNotes(e)),
       tool("izi-btn-theme", "moon", "Toggle light / dark", () => this.toggleTheme()),
-      tool("izi-btn-mcp", "mcp", "MCP Server (coming in stage 3)", () => {}),
+      tool("izi-btn-mcp", "mcp", "MCP Server", (e) => this.openMcpPanel(e)),
       tool("izi-btn-settings", "settings", "Settings", () => openPreferences())
     );
     this.#strip = h(
@@ -759,11 +779,147 @@ class nsIZIDevSpaceUI extends nsZenDOMOperatedFeature {
     setTimeout(() => ta.focus(), 50);
   }
 
+
+  // ------------------------------------------------------------- Fake Fill
+  async fakeFillTab(tab) {
+    const contexts = tab?.linkedBrowser?.browsingContext?.getAllBrowsingContextsInSubtree?.() || [];
+    let filled = 0;
+    for (const bc of contexts) {
+      try {
+        filled += (await bc.currentWindowGlobal?.getActor("IZIDevSpace").sendQuery("IZI:FakeFill")) || 0;
+      } catch (e) {
+        // cross-process or privileged frames without the actor
+      }
+    }
+    if (tab === gBrowser.selectedTab) this.toast(filled ? `Fake Fill: ${filled} field(s) filled` : "Fake Fill: no fillable fields found");
+    return filled;
+  }
+
+  toast(message) {
+    let el = document.getElementById("izi-toast");
+    if (!el) {
+      el = h("div", { id: "izi-toast" });
+      document.getElementById("tabbrowser-tabbox").append(el);
+    }
+    el.textContent = message;
+    el.setAttribute("show", "true");
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(() => el.removeAttribute("show"), 2600);
+  }
+
+  // ------------------------------------------------------------------- MCP
+  #setupMcp() {
+    const mcp = lazy.IZIMcpServer;
+    mcp.sync();
+    const update = () => {
+      const btn = document.getElementById("izi-btn-mcp");
+      const st = mcp.status();
+      btn?.toggleAttribute("running", st.running);
+      btn?.toggleAttribute("error", !!st.error);
+      if (btn) btn.title = st.running ? `MCP Server · running on ${st.url}` : st.error ? `MCP Server · ${st.error}` : "MCP Server · off";
+      this._renderMcpPanel?.();
+    };
+    const off = mcp.onChange(update);
+    window.addEventListener("unload", off, { once: true });
+    update();
+  }
+
+  #copy(textValue) {
+    Cc["@mozilla.org/widget/clipboardhelper;1"].getService(Ci.nsIClipboardHelper).copyString(textValue);
+    this.toast("Copied to clipboard");
+  }
+
+  openMcpPanel(event) {
+    const mcp = lazy.IZIMcpServer;
+    document.getElementById("izi-mcp-panel")?.remove();
+    const panel = document.createXULElement("panel");
+    panel.id = "izi-mcp-panel";
+    panel.setAttribute("type", "arrow");
+    let client = "claude-code";
+
+    const statusBox = h("div", { class: "izi-mcp-status" });
+    const port = h("input", { class: "izi-mcp-input", id: "izi-mcp-port", value: String(mcp.port), size: "6" });
+    const token = h("input", { class: "izi-mcp-input", id: "izi-mcp-token", value: mcp.token, placeholder: "none" });
+    const snippetBox = h("div", { class: "izi-mcp-snippet" });
+    const tabs = h("div", { class: "izi-mcp-tabs" });
+    const logBox = h("div", { class: "izi-mcp-log" });
+
+    const snippets = (st) => {
+      const hdr = st.token ? { Authorization: `Bearer ${st.token}` } : undefined;
+      return {
+        "claude-code": ["Claude Code", `claude mcp add --transport http izi-devspace ${st.url}${st.token ? ` --header "Authorization: Bearer ${st.token}"` : ""}`],
+        "claude-desktop": ["Claude Desktop", JSON.stringify({ mcpServers: { "izi-devspace": { command: "npx", args: ["-y", "mcp-remote", st.url, ...(st.token ? ["--header", `Authorization: Bearer ${st.token}`] : [])] } } }, null, 2)],
+        cursor: ["Cursor / VS Code", JSON.stringify({ mcpServers: { "izi-devspace": { url: st.url, ...(hdr ? { headers: hdr } : {}) } } }, null, 2)],
+      };
+    };
+
+    const render = () => {
+      const st = mcp.status();
+      const toggle = h("button", { class: "izi-switch" + (st.enabled ? " on" : ""), id: "izi-mcp-toggle", title: "Enable / disable", on: { click: () => Services.prefs.setBoolPref("izi.mcp.enabled", !st.enabled) } });
+      statusBox.replaceChildren(
+        h("span", { class: "izi-led" + (st.running ? " on" : st.error ? " err" : "") }),
+        h(
+          "div",
+          { class: "izi-mcp-status-text" },
+          h("b", {}, st.running ? "Running" : st.error ? "Error" : "Off"),
+          h("div", { class: "izi-mcp-sub" }, st.running ? `${st.url}${st.clients.length ? ` · ${st.clients.length} client(s): ${st.clients.join(", ")}` : ""}` : st.error || "Turn on to let AI agents (Claude Code, Cursor…) control this browser.")
+        ),
+        toggle
+      );
+      const all = snippets(st);
+      tabs.replaceChildren(...Object.entries(all).map(([k, [label]]) => h("button", { class: "izi-mcp-tab" + (k === client ? " on" : ""), on: { click: () => { client = k; render(); } } }, label)));
+      const code = all[client][1];
+      snippetBox.replaceChildren(h("pre", {}, code), h("button", { class: "izi-mcp-btn", on: { click: () => this.#copy(code) } }, "Copy"));
+      const rows = mcp.log.slice(-40).reverse().map((l) =>
+        h("div", { class: "izi-mcp-row" + (l.ok ? "" : " bad") },
+          h("span", { class: "t" }, new Date(l.time).toLocaleTimeString()),
+          h("span", { class: "n" }, l.tool),
+          h("span", { class: "a", title: l.error || JSON.stringify(l.args || {}) }, l.error || JSON.stringify(l.args || {})),
+          l.ms != null ? h("span", { class: "t" }, `${l.ms}ms`) : null)
+      );
+      logBox.replaceChildren(...(rows.length ? rows : [h("div", { class: "izi-mcp-sub" }, "No activity yet.")]));
+    };
+    this._renderMcpPanel = () => panel.state === "open" && render();
+
+    panel.append(
+      h(
+        "div",
+        { class: "izi-mcp" },
+        h("div", { class: "izi-mcp-head" }, h("b", {}, "MCP Server")),
+        statusBox,
+        h(
+          "div",
+          { class: "izi-mcp-grid" },
+          h("label", {}, "Port", port),
+          h("label", {}, "Bearer token (optional)", h("div", { class: "izi-mcp-tokrow" }, token,
+            h("button", { class: "izi-mcp-btn", title: "Generate", on: { click: () => { token.value = Array.from(crypto.getRandomValues(new Uint8Array(18)), (x) => x.toString(16).padStart(2, "0")).join(""); } } }, "Gen")))
+        ),
+        h("div", { class: "izi-mcp-actions" }, h("button", { class: "izi-mcp-btn", id: "izi-mcp-apply", on: { click: () => {
+          const p = Number(port.value);
+          if (p >= 1024 && p < 65536) Services.prefs.setIntPref("izi.mcp.port", p);
+          Services.prefs.setStringPref("izi.mcp.token", token.value.trim());
+        } } }, "Apply")),
+        h("div", { class: "izi-mcp-sec" }, "Connect an agent"),
+        tabs,
+        snippetBox,
+        h("div", { class: "izi-mcp-sec" }, `Tools (${mcp.status().tools.length})`),
+        h("div", { class: "izi-mcp-tools" }, mcp.status().tools.map((t) => h("code", {}, t))),
+        h("div", { class: "izi-mcp-sec izi-mcp-row-head" }, h("span", {}, "Activity"), h("button", { class: "izi-mcp-btn", on: { click: () => mcp.clearLog() } }, "Clear")),
+        logBox
+      )
+    );
+    document.getElementById("mainPopupSet").append(panel);
+    panel.addEventListener("popuphidden", () => { panel.remove(); this._renderMcpPanel = null; }, { once: true });
+    render();
+    panel.openPopup(event?.currentTarget || document.getElementById("izi-btn-mcp"), "end_after");
+  }
+
   // ------------------------------------------------------ toolbar widgets
   #setupToolbarWidgets() {
     const widgets = [
       ["izi-devtools-button", "DevTools (F12)", () => this.#doKey(["key_toggleToolboxF12", "key_toggleToolbox"])],
       ["izi-mobile-button", "Mobile View (Ctrl+Shift+M)", () => this.#doKey(["key_responsiveDesignMode"])],
+      ["izi-fakefill-button", "Fake Fill — fill forms with test data", () => this.fakeFillTab(gBrowser.selectedTab)],
       ["izi-dock-button", "Dock Tab (split view)", (e) => this.dockMenu(e)],
       ["izi-sleep-button", "Sleep Tab", () => this.sleepTab()],
     ];
@@ -783,7 +939,7 @@ class nsIZIDevSpaceUI extends nsZenDOMOperatedFeature {
     for (const [id, , fn] of widgets) this[`_cmd_${id}`] = fn;
 
     if (!Services.prefs.getBoolPref(PREF_PLACED, false)) {
-      const order = ["izi-devtools-button", "izi-mobile-button", "screenshot-button", "developer-button", "izi-dock-button", "izi-sleep-button"];
+      const order = ["izi-devtools-button", "izi-mobile-button", "screenshot-button", "izi-fakefill-button", "developer-button", "izi-dock-button", "izi-sleep-button"];
       const urlbarPos = CustomizableUI.getPlacementOfWidget("urlbar-container")?.position ?? 0;
       let pos = urlbarPos + 1;
       for (const id of order) {
@@ -794,6 +950,17 @@ class nsIZIDevSpaceUI extends nsZenDOMOperatedFeature {
         }
       }
       Services.prefs.setBoolPref(PREF_PLACED, true);
+      Services.prefs.setBoolPref("izi.toolbar.fakefill-placed", true);
+    }
+    // Installs from before Fake Fill existed: add it after the screenshot button once.
+    if (!Services.prefs.getBoolPref("izi.toolbar.fakefill-placed", false)) {
+      try {
+        const after = CustomizableUI.getPlacementOfWidget("screenshot-button");
+        CustomizableUI.addWidgetToArea("izi-fakefill-button", CustomizableUI.AREA_NAVBAR, after ? after.position + 1 : undefined);
+      } catch (e) {
+        this.#err("place fakefill", e);
+      }
+      Services.prefs.setBoolPref("izi.toolbar.fakefill-placed", true);
     }
     gBrowser.tabContainer.addEventListener("TabSelect", () => this.#updateToolbarState());
   }

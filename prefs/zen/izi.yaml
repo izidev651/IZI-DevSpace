@@ -13,3 +13,14 @@
 
 - name: izi.newtab.animate
   value: true
+
+# Built-in MCP server (AI agents control the browser). Off until the user
+# turns it on in the MCP panel (plug icon in the IZI strip).
+- name: izi.mcp.enabled
+  value: false
+
+- name: izi.mcp.port
+  value: 9420
+
+- name: izi.mcp.token
+  value: ""

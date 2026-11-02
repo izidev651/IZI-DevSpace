@@ -13,7 +13,7 @@ Branch `main` berisi versi Electron (Chromium).
 |---|---|---|
 | 1 | Rebrand (nama, logo, server update dimatikan, profil terpisah dari Zen) + build Windows x64 di GitHub Actions | ✅ selesai (build pertama ±2 jam, berikutnya ±20–35 menit dengan sccache) |
 | 2 | UI IZI DevSpace: strip Space (container) / Group (workspace), tab strip horizontal, toolbar (DevTools, Mobile, Capture, Tools, Dock, Sleep), New Tab gelombang, tema gelap | ✅ selesai — dicek otomatis di Windows (20 cek, `scripts/izi_preview.py`) |
-| 3 | Fake Fill + MCP Server | ⏳ |
+| 3 | Fake Fill (tombol toolbar + tool MCP) dan MCP Server bawaan (23 tool, panel di ikon colokan) | ✅ selesai |
 
 ## Build Windows
 
@@ -30,3 +30,20 @@ Jika build pertama kena batas 6 jam, cukup *Re-run* — bagian yang sudah dikomp
 - `configs/common/mozconfig`: basename `IZIDevSpace` (profil terpisah dari Zen), `IZI_FAST_BUILD` melewati clang-plugin
 - `configs/branding/*`: logo IZI DevSpace
 - Workflow Zen diganti satu workflow Windows untuk runner gratis
+
+## MCP Server
+
+Klik ikon **colokan** di strip kiri → nyalakan. Server berjalan di `http://127.0.0.1:9420/mcp`
+(hanya localhost; Host/Origin dicek; token Bearer opsional). Default **mati**.
+
+```bash
+claude mcp add --transport http izi-devspace http://127.0.0.1:9420/mcp
+```
+
+Tool: `list_spaces`, `list_tabs`, `get_active_tab`, `open_tab`, `switch_tab`, `close_tab`, `navigate`,
+`history`, `get_page_text`, `snapshot`, `click`, `type`, `press_key`, `scroll`, `evaluate`, `screenshot`,
+`wait_for`, `capture_full_page`, `fake_fill`, `mobile_view`, `sleep_tab`, `dock_tab`, `create_group`.
+Klik/ketik memakai event *trusted* (windowUtils / nsITextInputProcessor).
+
+Kode: `src/zen/izi/IZIMcpServer.sys.mjs` (server), `IZIDevSpaceChild.sys.mjs` (actor di halaman: Fake Fill,
+snapshot, klik, ketik, evaluate), `IZIDevSpaceUI.mjs` (UI).

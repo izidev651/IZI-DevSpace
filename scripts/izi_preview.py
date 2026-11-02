@@ -174,6 +174,107 @@ def run_steps():
     time.sleep(1)
 
 
+
+    # ------------------------------------------------------------ Stage 3
+    import http.server, threading, urllib.request
+
+    FORM = ("<!doctype html><title>Signup form</title><body style='font-family:sans-serif;padding:20px'>"
+            "<h1>Signup</h1><form id=f onsubmit=\"event.preventDefault();document.getElementById('done').textContent='Submitted: '+new FormData(this).get('email')\">"
+            "<label>Full name <input name=fullname></label><br><label>Email <input type=email name=email id=email></label><br>"
+            "<label>Phone <input type=tel name=phone></label><br><label>City <input name=city></label><br>"
+            "<label>Password <input type=password name=password></label><br><select name=country><option value=''>-</option><option>ID</option><option>SG</option></select>"
+            "<textarea name=bio></textarea><label><input type=checkbox name=tos required> agree</label>"
+            "<button id=go>Send</button></form><p id=done></p>" + "<p>filler line</p>" * 80 + "</body>")
+
+    class H(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            body = FORM.encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        def log_message(self, *a):
+            pass
+
+    httpd = http.server.ThreadingHTTPServer(("127.0.0.1", 0), H)
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    form_url = f"http://127.0.0.1:{httpd.server_address[1]}/form"
+
+    # Fake Fill button on a real page
+    js(f"gBrowser.selectedTab = gBrowser.addTrustedTab({json.dumps(form_url)});")
+    time.sleep(3)
+    js("window.gIZIDevSpaceUI['_cmd_izi-fakefill-button']?.()")
+    time.sleep(2)
+    shot("09-fakefill")
+
+    # MCP over HTTP, exactly like an agent would
+    mcp_url = "http://127.0.0.1:9420/mcp"
+    session = {"id": None, "n": 0}
+    def rpc(method, params=None, notify=False):
+        msg = {"jsonrpc": "2.0", "method": method}
+        if params is not None:
+            msg["params"] = params
+        if not notify:
+            session["n"] += 1
+            msg["id"] = session["n"]
+        req = urllib.request.Request(mcp_url, data=json.dumps(msg).encode(), method="POST",
+                                     headers={"Content-Type": "application/json", "Accept": "application/json, text/event-stream",
+                                              **({"Mcp-Session-Id": session["id"]} if session["id"] else {})})
+        with urllib.request.urlopen(req, timeout=60) as r:
+            sid = r.headers.get("Mcp-Session-Id")
+            if sid:
+                session["id"] = sid
+            body = r.read().decode() if r.status != 202 else ""
+            return json.loads(body) if body else None
+    def tool(name, args=None):
+        r = rpc("tools/call", {"name": name, "arguments": args or {}})
+        res = r["result"]
+        txt = "\n".join(c.get("text", "") for c in res["content"] if c["type"] == "text")
+        if res.get("isError"):
+            raise RuntimeError(f"{name}: {txt}")
+        return res, txt
+
+    mcp_ok = wait_for("window.gIZIDevSpaceUI && document.getElementById('izi-btn-mcp')?.hasAttribute('running')", 20)
+    check("MCP server running (pref on)", mcp_ok)
+    try:
+        init = rpc("initialize", {"protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": {"name": "izi-preview", "version": "1"}})
+        check("MCP initialize + session id", init["result"]["serverInfo"]["name"] == "izi-devspace" and bool(session["id"]), init["result"]["serverInfo"])
+        rpc("notifications/initialized", notify=True)
+        tools = rpc("tools/list")["result"]["tools"]
+        check("MCP tools/list", len(tools) >= 23, len(tools))
+        _, t = tool("list_spaces")
+        check("MCP list_spaces", "Personal" in t, t[:120])
+        _, t = tool("open_tab", {"url": form_url})
+        tab_id = json.loads(t)["id"]
+        _, t = tool("snapshot")
+        check("MCP snapshot lists form fields", "input[email]" in t, t[:160])
+        _, t = tool("fake_fill")
+        check("MCP fake_fill fills fields", json.loads(t)["filled"] >= 5, t)
+        tool("type", {"selector": "#email", "text": "smoke@test.dev"})
+        tool("click", {"selector": "#go"})
+        _, t = tool("get_page_text", {"maxChars": 400})
+        check("MCP type + click submit the form", "Submitted: smoke@test.dev" in t, t[:200])
+        _, t = tool("evaluate", {"expression": "({ title: document.title, n: document.querySelectorAll('input').length })"})
+        check("MCP evaluate", json.loads(t).get("n", 0) >= 5, t)
+        res, _ = tool("screenshot")
+        img = res["content"][0]
+        check("MCP screenshot returns an image", img["type"] == "image" and len(img["data"]) > 1000, len(img.get("data", "")))
+        with open(os.path.join(OUT, "10-mcp-screenshot.jpg"), "wb") as f:
+            f.write(base64.b64decode(img["data"]))
+        _, t = tool("capture_full_page")
+        check("MCP capture_full_page saves a PNG", json.loads(t).get("height", 0) > 1000, t)
+        _, t = tool("list_tabs")
+        check("MCP list_tabs sees the tab", tab_id in t)
+    except Exception as e:
+        check("MCP flow", False, repr(e))
+    time.sleep(1)
+    js("window.gIZIDevSpaceUI.openMcpPanel()")
+    time.sleep(1.5)
+    shot("11-mcp-panel")
+    js("document.getElementById('izi-mcp-panel')?.hidePopup()")
+    httpd.shutdown()
+
 state, state2 = {}, {}
 try:
     run_steps()

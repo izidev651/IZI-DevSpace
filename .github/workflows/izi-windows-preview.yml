@@ -68,7 +68,8 @@ jobs:
             'user_pref("browser.shell.checkDefaultBrowser", false);',
             'user_pref("browser.startup.homepage_override.mstone", "ignore");',
             'user_pref("datareporting.policy.dataSubmissionEnabled", false);',
-            'user_pref("toolkit.telemetry.reportingpolicy.firstRun", false);'
+            'user_pref("toolkit.telemetry.reportingpolicy.firstRun", false);',
+            'user_pref("izi.mcp.enabled", true);'
           ) | Set-Content -Path (Join-Path $prof "user.js")
           # Marionette needs this to drive the browser UI (chrome context).
           $env:MOZ_REMOTE_ALLOW_SYSTEM_ACCESS = "1"
