@@ -12,7 +12,7 @@ Branch `main` berisi versi Electron (Chromium).
 | Tahap | Isi | Status |
 |---|---|---|
 | 1 | Rebrand (nama, logo, server update dimatikan, profil terpisah dari Zen) + build Windows x64 di GitHub Actions | ✅ selesai (build pertama ±2 jam, berikutnya ±20–35 menit dengan sccache) |
-| 2 | UI IZI DevSpace: sidebar Space/Group gaya kotak, toolbar 7 ikon, New Tab gelombang | ⏳ |
+| 2 | UI IZI DevSpace: strip Space (container) / Group (workspace), tab strip horizontal, toolbar (DevTools, Mobile, Capture, Tools, Dock, Sleep), New Tab gelombang, tema gelap | ✅ selesai — dicek otomatis di Windows (20 cek, `scripts/izi_preview.py`) |
 | 3 | Fake Fill + MCP Server | ⏳ |
 
 ## Build Windows
