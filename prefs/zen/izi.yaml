@@ -6,3 +6,10 @@
 - name: izi.ui.enabled
   value: true
 
+
+# New tab wave background: teal | ocean | sunset | forest | mono
+- name: izi.newtab.wave
+  value: "teal"
+
+- name: izi.newtab.animate
+  value: true

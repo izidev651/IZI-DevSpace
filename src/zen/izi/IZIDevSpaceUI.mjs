@@ -98,6 +98,7 @@ class nsIZIDevSpaceUI extends nsZenDOMOperatedFeature {
     await step("strip", () => this.#buildStrip());
     await step("tabstrip", () => this.#buildTabStrip());
     await step("widgets", () => this.#setupToolbarWidgets());
+    await step("newtab", () => this.#buildNewTab());
     document.documentElement.setAttribute("izi-devspace", "true");
     await step("wait-workspaces", () =>
       Promise.race([
@@ -464,6 +465,109 @@ class nsIZIDevSpaceUI extends nsZenDOMOperatedFeature {
       { label: "Close Tab", run: () => gBrowser.removeTab(tab, { animate: true }) },
       { label: "Close Other Tabs", run: () => this.stripTabs.filter((t) => t !== tab && !t.pinned && !t.hasAttribute("zen-essential")).forEach((t) => gBrowser.removeTab(t)) },
     ], event);
+  }
+
+
+  // --------------------------------------------------------------- new tab
+  // Zen's new tab is an "empty tab" (root[zen-has-empty-tab]); IZI paints the
+  // wave background, a search pill and a Customize popover over the page area.
+  static WAVES = {
+    teal: { bg: "#04121a", layers: ["#061b25", "#082833", "#0a3640", "#0e454c", "#125659"] },
+    ocean: { bg: "#050b1a", layers: ["#0a1730", "#0e2245", "#132f5c", "#1a3d74", "#22508f"] },
+    sunset: { bg: "#140a1c", layers: ["#2a1033", "#45173f", "#6b2245", "#963346", "#c44d3f"] },
+    forest: { bg: "#07120c", layers: ["#0c1f15", "#112c1d", "#173b26", "#1e4b30", "#275e3b"] },
+    mono: { bg: "#0b0d10", layers: ["#14181d", "#1b2026", "#232930", "#2b333b", "#353e47"] },
+  };
+
+  #wavePath(baseY, amp, seed) {
+    let st = seed;
+    const r = () => { st = (st * 16807) % 2147483647; return (st - 1) / 2147483646; };
+    const pts = [];
+    for (let x = -240; x <= 1680; x += 240) pts.push([x, baseY + (r() * 2 - 1) * amp]);
+    let d = `M${pts[0][0]},${pts[0][1]}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+      const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+      const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+      d += ` C${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${p2[0]},${p2[1].toFixed(1)}`;
+    }
+    return d + " L1680,960 L-240,960 Z";
+  }
+
+  #paintWaves() {
+    const theme = nsIZIDevSpaceUI.WAVES[Services.prefs.getStringPref("izi.newtab.wave", "teal")] || nsIZIDevSpaceUI.WAVES.teal;
+    const layers = [[290, 42, 7], [390, 52, 23], [490, 58, 41], [590, 62, 59], [690, 58, 97]];
+    const SVG = "http://www.w3.org/2000/svg";
+    const svg = document.getElementById("izi-waves");
+    svg.replaceChildren();
+    layers.forEach(([y, a, sd], i) => {
+      const g = document.createElementNS(SVG, "g");
+      g.setAttribute("class", "izi-wave");
+      g.style.setProperty("--dur", `${9 + i * 2.5}s`);
+      g.style.setProperty("--amp", `${4 + i}px`);
+      const path = document.createElementNS(SVG, "path");
+      path.setAttribute("d", this.#wavePath(y, a, sd));
+      path.setAttribute("fill", theme.layers[i]);
+      g.append(path);
+      svg.append(g);
+    });
+    this.newTabEl.style.background = theme.bg;
+    this.newTabEl.toggleAttribute("animate", Services.prefs.getBoolPref("izi.newtab.animate", true));
+  }
+
+  #buildNewTab() {
+    const tabbox = document.getElementById("tabbrowser-tabbox");
+    const SVG = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(SVG, "svg");
+    svg.id = "izi-waves";
+    svg.setAttribute("viewBox", "0 0 1440 900");
+    svg.setAttribute("preserveAspectRatio", "none");
+    const themes = Object.entries(nsIZIDevSpaceUI.WAVES).map(([k, t]) =>
+      h("button", {
+        class: "izi-wave-theme",
+        "data-wave": k,
+        title: k,
+        style: { background: `linear-gradient(180deg, ${t.bg}, ${t.layers[2]} 55%, ${t.layers[4]})` },
+        on: { click: () => { Services.prefs.setStringPref("izi.newtab.wave", k); } },
+      })
+    );
+    const animate = h("input", { type: "checkbox", id: "izi-wave-animate", on: { change: (e) => Services.prefs.setBoolPref("izi.newtab.animate", e.target.checked) } });
+    const custom = h(
+      "div",
+      { id: "izi-newtab-customize", hidden: true },
+      h("div", { class: "izi-nt-head" }, h("b", {}, "Customize"), h("button", { class: "izi-nt-x", on: { click: () => (custom.hidden = true) } }, "✕")),
+      h("div", { class: "izi-nt-sec" }, "Wave theme"),
+      h("div", { class: "izi-nt-themes" }, themes),
+      h("label", { class: "izi-nt-row" }, h("span", {}, "Animate waves"), animate)
+    );
+    this.newTabEl = h(
+      "div",
+      { id: "izi-newtab" },
+      svg,
+      h("div", { id: "izi-newtab-search", on: { click: () => this.openSearch() } }, iconImg("search"), h("span", {}, "Search or type a URL")),
+      h("button", { id: "izi-newtab-customize-btn", on: { click: () => { custom.hidden = !custom.hidden; } } }, iconImg("pencil"), " Customize"),
+      custom
+    );
+    tabbox.append(this.newTabEl);
+    const sync = () => {
+      animate.checked = Services.prefs.getBoolPref("izi.newtab.animate", true);
+      const cur = Services.prefs.getStringPref("izi.newtab.wave", "teal");
+      themes.forEach((b) => b.toggleAttribute("selected", b.dataset.wave === cur));
+      this.#paintWaves();
+    };
+    Services.prefs.addObserver("izi.newtab.", sync);
+    window.addEventListener("unload", () => Services.prefs.removeObserver("izi.newtab.", sync), { once: true });
+    sync();
+    // Keep the overlay exactly over the page area.
+    const panels = document.getElementById("tabbrowser-tabpanels");
+    const place = () => {
+      const a = tabbox.getBoundingClientRect();
+      const b = panels.getBoundingClientRect();
+      Object.assign(this.newTabEl.style, { left: `${b.left - a.left}px`, top: `${b.top - a.top}px`, width: `${b.width}px`, height: `${b.height}px` });
+    };
+    new ResizeObserver(place).observe(panels);
+    window.addEventListener("resize", place);
+    place();
   }
 
   // --------------------------------------------------------------- actions

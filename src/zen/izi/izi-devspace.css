@@ -267,3 +267,53 @@
 .izi-win-btn { width: 46px; color: var(--izi-muted); }
 .izi-win-btn:hover { background: var(--izi-hover) !important; color: var(--izi-text); }
 #izi-win-close:hover { background: #e81123 !important; color: #fff; }
+
+/* Zen's own window buttons are replaced by the IZI tab strip ones. */
+:root[izi-devspace]:not(:-moz-platform(macos)) #zen-appcontent-navbar-container .titlebar-buttonbox-container,
+:root[izi-devspace]:not(:-moz-platform(macos)) #nav-bar .titlebar-buttonbox-container {
+  display: none !important;
+}
+
+/* ------------------------------------------------------------------ */
+/* New tab: waves + search pill + Customize (shown on Zen's empty tab) */
+#tabbrowser-tabbox { position: relative; }
+#izi-newtab {
+  display: none;
+  position: absolute;
+  overflow: hidden;
+  border-radius: var(--zen-native-inner-radius, 8px);
+  z-index: 3;
+  color: #e6edf3;
+}
+:root[izi-devspace][zen-has-empty-tab="true"] #izi-newtab { display: block; }
+#izi-waves { position: absolute; inset: 0; width: 100%; height: 100%; }
+#izi-newtab[animate] .izi-wave { animation: izi-bob var(--dur) ease-in-out infinite alternate; }
+@keyframes izi-bob { from { transform: translateY(calc(var(--amp) * -1)); } to { transform: translateY(var(--amp)); } }
+#izi-newtab-search {
+  position: absolute; left: 50%; top: 25%; transform: translateX(-50%);
+  width: min(500px, calc(100% - 48px)); height: 44px; border-radius: 22px;
+  display: flex; align-items: center; gap: 12px; padding: 0 18px; cursor: text;
+  background: rgba(52, 58, 64, 0.92); color: #c4ccd4; font-size: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.04);
+}
+#izi-newtab-search:hover { background: rgba(58, 64, 71, 0.98); }
+#izi-newtab .izi-ic { width: 18px; height: 18px; -moz-context-properties: fill, stroke; fill: currentColor; stroke: currentColor; }
+#izi-newtab button { appearance: none; font: inherit; color: inherit; border: 0; }
+#izi-newtab-customize-btn {
+  position: absolute; right: 10px; bottom: 10px; height: 30px; padding: 0 12px; border-radius: 6px;
+  background: rgba(8, 18, 24, 0.88) !important; color: #f0f4f8; font-weight: 600; font-size: 12px;
+  display: flex; align-items: center; gap: 7px;
+}
+#izi-newtab-customize-btn .izi-ic { width: 13px; height: 13px; }
+#izi-newtab-customize {
+  position: absolute; right: 10px; bottom: 50px; width: 300px; padding: 14px; border-radius: 14px;
+  background: rgba(13, 20, 26, 0.97); border: 1px solid rgba(255, 255, 255, 0.07); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+}
+#izi-newtab-customize[hidden] { display: none; }
+.izi-nt-head { display: flex; justify-content: space-between; align-items: center; }
+.izi-nt-x { background: none !important; color: #8a97a4 !important; }
+.izi-nt-sec { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #6b7886; margin: 14px 0 8px; }
+.izi-nt-themes { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.izi-wave-theme { height: 40px; border-radius: 9px; border: 2px solid transparent !important; }
+.izi-wave-theme[selected] { border-color: #fff !important; }
+.izi-nt-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0 2px; color: #c9d4de; }

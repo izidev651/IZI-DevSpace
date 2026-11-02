@@ -146,6 +146,10 @@ def run_steps():
     time.sleep(3)
     state2 = js("const ui = window.gIZIDevSpaceUI; return { spaces: ui.spaces.map(s => s.name), active: ui.spaces.find(s => s.id === ui.activeSpaceId)?.name, groups: ui.groupsOf(ui.activeSpaceId).map(g => g.name) };")
     check("Add Space creates a space and switches to it", state2["active"] == "Research", state2)
+    js("try { gURLBar.view.close(); gURLBar.blur(); } catch (e) {}")
+    time.sleep(1)
+    nt = js("const el = document.getElementById('izi-newtab'); return { shown: !!el && getComputedStyle(el).display !== 'none', empty: document.documentElement.getAttribute('zen-has-empty-tab'), w: el?.getBoundingClientRect().width };")
+    check("New Tab waves shown on the empty tab", nt.get("shown") and (nt.get("w") or 0) > 200, nt)
     shot("07-new-space")
 
     # Back to Personal, then light theme
