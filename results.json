@@ -1,0 +1,318 @@
+{
+  "state": {
+    "strip": true,
+    "spaces": [
+      "Personal",
+      "Work"
+    ],
+    "groups": [
+      "Browse"
+    ],
+    "activeSpace": 6,
+    "widgets": [
+      [
+        "izi-devtools-button",
+        true
+      ],
+      [
+        "izi-mobile-button",
+        true
+      ],
+      [
+        "screenshot-button",
+        true
+      ],
+      [
+        "developer-button",
+        true
+      ],
+      [
+        "izi-dock-button",
+        true
+      ],
+      [
+        "izi-sleep-button",
+        true
+      ]
+    ],
+    "vertical": true,
+    "stage": "ready",
+    "errors": [],
+    "tabstrip": true,
+    "sidebarHidden": true,
+    "winControls": true,
+    "backInNavbar": true,
+    "title": "IZI DevSpace"
+  },
+  "state2": {
+    "spaces": [
+      "Personal",
+      "Work",
+      "Research"
+    ],
+    "active": "Research",
+    "groups": [
+      "Main"
+    ]
+  },
+  "results": [
+    {
+      "check": "IZI UI initialised",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "strip present",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "Personal + Work spaces",
+      "ok": true,
+      "detail": [
+        "Personal",
+        "Work"
+      ]
+    },
+    {
+      "check": "active Space has coloured ring",
+      "ok": true,
+      "detail": {
+        "spaceBorder": "rgb(31, 199, 182)",
+        "groupBg": "rgb(31, 199, 182)",
+        "dupWinButtons": 0
+      }
+    },
+    {
+      "check": "active Group tile is filled",
+      "ok": true,
+      "detail": {
+        "spaceBorder": "rgb(31, 199, 182)",
+        "groupBg": "rgb(31, 199, 182)",
+        "dupWinButtons": 0
+      }
+    },
+    {
+      "check": "no duplicate window buttons",
+      "ok": true,
+      "detail": {
+        "spaceBorder": "rgb(31, 199, 182)",
+        "groupBg": "rgb(31, 199, 182)",
+        "dupWinButtons": 0
+      }
+    },
+    {
+      "check": "toolbar widgets present",
+      "ok": true,
+      "detail": [
+        [
+          "izi-devtools-button",
+          true
+        ],
+        [
+          "izi-mobile-button",
+          true
+        ],
+        [
+          "screenshot-button",
+          true
+        ],
+        [
+          "developer-button",
+          true
+        ],
+        [
+          "izi-dock-button",
+          true
+        ],
+        [
+          "izi-sleep-button",
+          true
+        ]
+      ]
+    },
+    {
+      "check": "init reached ready",
+      "ok": true,
+      "detail": [
+        "ready",
+        []
+      ]
+    },
+    {
+      "check": "horizontal tab strip present",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "Zen vertical sidebar hidden",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "window controls present",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "back button in nav-bar",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "tab strip mirrors the Group's tabs",
+      "ok": true,
+      "detail": [
+        3,
+        3
+      ]
+    },
+    {
+      "check": "DevTools button opens toolbox",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "Mobile button opens Responsive Design Mode",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "Dock creates split view",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "Sleep unloads the tab",
+      "ok": true,
+      "detail": "pending 0 -> 1"
+    },
+    {
+      "check": "Add Group creates a group in the active Space",
+      "ok": true,
+      "detail": [
+        "Browse",
+        "Docs"
+      ]
+    },
+    {
+      "check": "Add Space creates a space and switches to it",
+      "ok": true,
+      "detail": {
+        "spaces": [
+          "Personal",
+          "Work",
+          "Research"
+        ],
+        "active": "Research",
+        "groups": [
+          "Main"
+        ]
+      }
+    },
+    {
+      "check": "New Tab waves shown on the empty tab",
+      "ok": true,
+      "detail": {
+        "shown": true,
+        "empty": "true",
+        "w": 1351
+      }
+    },
+    {
+      "check": "content actor responds",
+      "ok": true,
+      "detail": {
+        "ok": true,
+        "r": {
+          "title": "Signup form",
+          "url": "http://127.0.0.1:53255/form",
+          "text": "Signup\nFull name \nEmail \nPhone \nCity \nPassword \n agreeSend\n\n\n\u2026[truncated 1038 chars]"
+        }
+      }
+    },
+    {
+      "check": "Fake Fill button fills the form",
+      "ok": true,
+      "detail": [
+        "Fake Fill: 8 field(s) filled",
+        [
+          "workspaces init > 15s, continuing"
+        ]
+      ]
+    },
+    {
+      "check": "MCP server running (pref on)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "MCP initialize + session id",
+      "ok": true,
+      "detail": {
+        "name": "izi-devspace",
+        "title": "IZI DevSpace",
+        "version": "1.24b"
+      }
+    },
+    {
+      "check": "MCP tools/list",
+      "ok": true,
+      "detail": 23
+    },
+    {
+      "check": "MCP list_spaces",
+      "ok": true,
+      "detail": "[\n  {\n    \"id\": 6,\n    \"name\": \"Personal\",\n    \"active\": true,\n    \"groups\": [\n      {\n        \"id\": \"{69f5413a-a783-425"
+    },
+    {
+      "check": "MCP snapshot lists form fields",
+      "ok": true,
+      "detail": "Page: Signup form\nURL: http://127.0.0.1:53255/form\n\n[1] input[text] \"fullname\"\n[2] input[email] \"email\"\n[3] input[tel] \"phone\"\n[4] input[text] \"city\"\n[5] input["
+    },
+    {
+      "check": "MCP fake_fill fills fields",
+      "ok": true,
+      "detail": "{\n  \"filled\": 8\n}"
+    },
+    {
+      "check": "MCP type + click submit the form",
+      "ok": true,
+      "detail": "# Signup form\nhttp://127.0.0.1:53255/form\n\nSignup\nFull name \nEmail \nPhone \nCity \nPassword \n agreeSend\n\nSubmitted: smoke@test.dev\n\nfiller line\n\nfiller line\n\nfiller line\n\nfiller line\n\nfiller line\n\nfille"
+    },
+    {
+      "check": "MCP evaluate",
+      "ok": true,
+      "detail": "{\n  \"title\": \"Signup form\",\n  \"n\": 6\n}"
+    },
+    {
+      "check": "MCP screenshot returns an image",
+      "ok": true,
+      "detail": 57524
+    },
+    {
+      "check": "MCP capture_full_page saves a PNG",
+      "ok": true,
+      "detail": "{\n  \"file\": \"C:\\\\Users\\\\runneradmin\\\\Downloads\\\\IZI DevSpace Captures\\\\127.0.0.1-2026-11-02T14-29-35.png\",\n  \"width\": 1351,\n  \"height\": 3058\n}"
+    },
+    {
+      "check": "MCP list_tabs sees the tab",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "MCP panel opens and shows Running + snippet",
+      "ok": true,
+      "detail": {
+        "state": "open",
+        "text": "MCP ServerRunninghttp://127.0.0.1:9420/mcp \u00b7 1 client(s): izi-preview 1PortBearer token (optional)GenApplyConnect an agentClaude CodeClaude DesktopCursor / VS Codeclaude mcp add --transport http izi-devspace http://127.0.0.1:9420/mcpCopyTools (23)list_spaceslist_tabsget_active_tabopen_tabswitch_tabc"
+      }
+    }
+  ],
+  "izi_console": [
+    "1793629730913\taddons.xpi\tWARN\tChecking D:\\a\\IZI-DevSpace\\IZI-DevSpace\\app\\zen\\distribution\\extensions for addons"
+  ],
+  "ui_errors": [
+    "workspaces init > 15s, continuing"
+  ]
+}
