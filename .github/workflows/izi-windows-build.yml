@@ -7,7 +7,7 @@ name: Zen Windows build
 on:
   push:
     branches: [zen]
-    paths-ignore: ['**.md', 'docs/**']
+    paths-ignore: ['**.md', 'docs/**', 'scripts/izi_preview.py', '.github/workflows/izi-windows-preview.yml']
   workflow_dispatch:
 
 concurrency:
@@ -165,55 +165,9 @@ jobs:
   windows-preview:
     name: UI preview on Windows
     needs: windows-x64
-    runs-on: windows-latest
-    timeout-minutes: 30
     permissions:
       contents: write
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: actions/download-artifact@v5
-        with:
-          name: IZI-DevSpace-Windows-x64
-          path: dl
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Run UI checks + screenshots
-        shell: pwsh
-        run: |
-          python -m pip install marionette_driver
-          Expand-Archive dl/IZI-DevSpace-x64-portable.zip -DestinationPath app
-          $exe = Get-ChildItem app -Recurse -Filter zen.exe | Select-Object -First 1
-          $prof = Join-Path $env:RUNNER_TEMP "izi-profile"
-          New-Item -ItemType Directory -Force -Path $prof | Out-Null
-          @(
-            'user_pref("zen.welcome-screen.seen", true);',
-            'user_pref("browser.shell.checkDefaultBrowser", false);',
-            'user_pref("browser.startup.homepage_override.mstone", "ignore");',
-            'user_pref("datareporting.policy.dataSubmissionEnabled", false);',
-            'user_pref("toolkit.telemetry.reportingpolicy.firstRun", false);'
-          ) | Set-Content -Path (Join-Path $prof "user.js")
-          Start-Process -FilePath $exe.FullName -ArgumentList "--marionette","--no-remote","--profile",$prof,"about:blank"
-          New-Item -ItemType Directory -Force -Path preview-out | Out-Null
-          python scripts/izi_preview.py preview-out
-          if ($LASTEXITCODE -ne 0) { Write-Host "preview script exit code $LASTEXITCODE" }
-          Get-Process zen -ErrorAction SilentlyContinue | Stop-Process -Force
-          Get-ChildItem preview-out
-
-      - name: Publish to zen-preview branch
-        if: always()
-        shell: bash
-        run: |
-          set -x
-          [ -d preview-out ] || exit 0
-          cd preview-out
-          printf '# IZI DevSpace — UI preview (Windows)\n\nCommit: %s\nRun: %s/%s/actions/runs/%s\n' "$GITHUB_SHA" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > README.md
-          git init -q -b zen-preview
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -q -m "UI preview (Windows) for $GITHUB_SHA"
-          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" zen-preview
+      actions: read
+    uses: ./.github/workflows/izi-windows-preview.yml
+    with:
+      run-id: ${{ github.run_id }}

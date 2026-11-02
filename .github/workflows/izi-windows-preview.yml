@@ -1,0 +1,94 @@
+# Runs the built IZI DevSpace Windows package on a Windows runner, drives the UI
+# through Marionette (scripts/izi_preview.py) and publishes screenshots + check
+# results to the `zen-preview` branch.
+# - Called by izi-windows-build.yml after each build (run-id = that run).
+# - Also runs on its own when only the preview script changes, re-using the
+#   latest successful Windows build (no rebuild needed).
+name: Zen Windows UI preview
+
+on:
+  workflow_call:
+    inputs:
+      run-id:
+        type: string
+        required: false
+        default: ''
+  push:
+    branches: [zen]
+    paths: ['scripts/izi_preview.py', '.github/workflows/izi-windows-preview.yml']
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  preview:
+    name: Windows UI checks + screenshots
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Pick build run
+        id: pick
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          RUN_ID="${{ inputs.run-id }}"
+          if [ -z "$RUN_ID" ]; then
+            RUN_ID=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/izi-windows-build.yml/runs?branch=zen&status=success&per_page=1" -q '.workflow_runs[0].id')
+          fi
+          echo "Using build run $RUN_ID"
+          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/download-artifact@v5
+        with:
+          name: IZI-DevSpace-Windows-x64
+          path: dl
+          run-id: ${{ steps.pick.outputs.run_id }}
+          github-token: ${{ github.token }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run UI checks + screenshots
+        shell: pwsh
+        run: |
+          python -m pip install --quiet marionette_driver
+          Expand-Archive dl/IZI-DevSpace-x64-portable.zip -DestinationPath app
+          $exe = Get-ChildItem app -Recurse -Filter zen.exe | Select-Object -First 1
+          $prof = Join-Path $env:RUNNER_TEMP "izi-profile"
+          New-Item -ItemType Directory -Force -Path $prof | Out-Null
+          @(
+            'user_pref("zen.welcome-screen.seen", true);',
+            'user_pref("browser.shell.checkDefaultBrowser", false);',
+            'user_pref("browser.startup.homepage_override.mstone", "ignore");',
+            'user_pref("datareporting.policy.dataSubmissionEnabled", false);',
+            'user_pref("toolkit.telemetry.reportingpolicy.firstRun", false);'
+          ) | Set-Content -Path (Join-Path $prof "user.js")
+          # Marionette needs this to drive the browser UI (chrome context).
+          $env:MOZ_REMOTE_ALLOW_SYSTEM_ACCESS = "1"
+          Start-Process -FilePath $exe.FullName -ArgumentList "--marionette","--no-remote","--profile",$prof,"about:blank"
+          New-Item -ItemType Directory -Force -Path preview-out | Out-Null
+          python scripts/izi_preview.py preview-out
+          Write-Host "preview script exit code $LASTEXITCODE"
+          Get-Process zen -ErrorAction SilentlyContinue | Stop-Process -Force
+          Get-ChildItem preview-out
+          exit 0
+
+      - name: Publish to zen-preview branch
+        if: always()
+        shell: bash
+        run: |
+          set -x
+          [ -d preview-out ] || exit 0
+          cd preview-out
+          printf '# IZI DevSpace - UI preview (Windows)\n\nCommit: %s\nBuild run: %s\nPreview run: %s/%s/actions/runs/%s\n' "$GITHUB_SHA" "${{ steps.pick.outputs.run_id }}" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > README.md
+          git init -q -b zen-preview
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "UI preview (Windows) for $GITHUB_SHA"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git" zen-preview
