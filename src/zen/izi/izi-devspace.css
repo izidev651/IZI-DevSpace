@@ -1,0 +1,194 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/* IZI DevSpace strip: Spaces (circles) + Groups (tiles) + bottom tools. */
+
+:root[izi-devspace] {
+  --izi-strip-w: 64px;
+  --izi-bg: light-dark(#e9edf1, #0d1218);
+  --izi-tile: light-dark(#dfe5ea, #121920);
+  --izi-line: light-dark(#ccd5dd, #1c252e);
+  --izi-text: light-dark(#1c2630, #d5dee7);
+  --izi-muted: light-dark(#5b6874, #8a97a4);
+  --izi-dim: light-dark(#8995a0, #5d6a77);
+  --izi-hover: light-dark(#dbe2e8, #18212a);
+  --izi-accent: #1fc7b6;
+}
+
+#izi-strip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: var(--izi-strip-w);
+  padding: 10px 0 10px;
+  background: var(--izi-bg);
+  border-inline-end: 1px solid var(--izi-line);
+  color: var(--izi-text);
+  -moz-window-dragging: drag;
+  z-index: 2;
+}
+
+:root[inDOMFullscreen] #izi-strip,
+:root[sizemode="fullscreen"][zen-compact-mode="true"] #izi-strip {
+  display: none;
+}
+
+/* macOS traffic lights sit at the top-left. */
+:root[izi-devspace]:is([platform="macosx"], :-moz-platform(macos)) #izi-strip {
+  padding-top: 38px;
+}
+
+#izi-strip .izi-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  -moz-window-dragging: no-drag;
+}
+
+#izi-strip .izi-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 4px 0 8px;
+  scrollbar-width: none;
+}
+
+#izi-strip button {
+  appearance: none;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  place-items: center;
+  position: relative;
+  flex-shrink: 0;
+}
+
+#izi-strip .izi-ic {
+  width: 18px;
+  height: 18px;
+  -moz-context-properties: fill, stroke, fill-opacity;
+  fill: currentColor;
+  stroke: currentColor;
+  pointer-events: none;
+}
+
+.izi-divider {
+  width: 36px;
+  height: 1px;
+  background: var(--izi-line);
+  margin: 12px 0 8px;
+  flex-shrink: 0;
+}
+
+/* Spaces */
+.izi-space {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 2px solid var(--c) !important;
+  background: color-mix(in srgb, var(--c) 8%, var(--izi-bg)) !important;
+  font-weight: 600;
+  font-size: 14px;
+  opacity: 0.72;
+  transition: opacity 0.12s, box-shadow 0.12s, transform 0.12s;
+}
+.izi-space:hover { opacity: 1; }
+.izi-space:active { transform: scale(0.94); }
+.izi-space.active {
+  opacity: 1;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 24%, transparent);
+}
+.izi-space .izi-ic { fill: var(--c); width: 17px; height: 17px; }
+
+.izi-add-space {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1.5px dashed var(--izi-dim) !important;
+  color: var(--izi-muted);
+  margin-top: 2px;
+}
+.izi-add-space .izi-ic, .izi-add-group .izi-ic { width: 14px; height: 14px; }
+
+/* Groups */
+.izi-group {
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  background: var(--izi-tile) !important;
+  border: 1px solid var(--izi-line) !important;
+  color: var(--izi-muted);
+  font-weight: 700;
+  font-size: 16px;
+  transition: background 0.12s, transform 0.12s;
+}
+.izi-group:hover { background: var(--izi-hover) !important; color: var(--izi-text); }
+.izi-group:active { transform: scale(0.94); }
+.izi-group.active {
+  background: var(--c) !important;
+  border-color: transparent !important;
+  color: #fff;
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--c) 35%, transparent);
+}
+.izi-group.active::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: -12px;
+  top: 11px;
+  width: 4px;
+  height: 22px;
+  border-radius: 0 3px 3px 0;
+  background: var(--c);
+}
+.izi-group .izi-ic { width: 20px; height: 20px; }
+.izi-letter { line-height: 1; pointer-events: none; }
+.izi-dot {
+  position: absolute;
+  inset-inline-start: -3px;
+  bottom: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #8b97a3;
+  border: 2px solid var(--izi-bg);
+}
+.izi-add-group {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1.5px dashed var(--izi-dim) !important;
+  color: var(--izi-muted);
+}
+.izi-add-space:hover, .izi-add-group:hover { color: var(--izi-text); border-color: var(--izi-muted) !important; }
+
+/* Bottom tools */
+#izi-side-tools { gap: 4px !important; padding-top: 8px; }
+.izi-side-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  color: var(--izi-muted);
+}
+.izi-side-btn:hover { background: var(--izi-hover) !important; color: var(--izi-text); }
+#izi-btn-mcp { color: color-mix(in srgb, var(--izi-muted) 60%, transparent); }
+
+/* Notes panel */
+#izi-notes-panel .izi-notes { display: flex; flex-direction: column; gap: 8px; padding: 10px; width: 340px; }
+#izi-notes-panel .izi-notes-head { display: flex; justify-content: space-between; align-items: center; }
+#izi-notes-panel .izi-notes-status { opacity: 0.6; font-size: 0.9em; }
+#izi-notes-text { min-height: 260px; resize: vertical; padding: 8px; border-radius: 8px; font: inherit; }
+
+/* Toolbar widgets */
+#izi-devtools-button { list-style-image: url("chrome://browser/content/izi/icons/devtools.svg"); }
+#izi-mobile-button { list-style-image: url("chrome://browser/content/izi/icons/mobile.svg"); }
+#izi-dock-button { list-style-image: url("chrome://browser/content/izi/icons/dock.svg"); }
+#izi-sleep-button { list-style-image: url("chrome://browser/content/izi/icons/sleep.svg"); }
+#izi-dock-button[checked] { color: var(--izi-accent); }

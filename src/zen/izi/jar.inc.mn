@@ -1,0 +1,19 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+        content/browser/zen-components/IZIDevSpaceUI.mjs                        (../../zen/izi/IZIDevSpaceUI.mjs)
+        content/browser/zen-styles/izi-devspace.css                             (../../zen/izi/izi-devspace.css)
+        content/browser/izi/icons/devtools.svg                                              (../../zen/izi/icons/devtools.svg)
+        content/browser/izi/icons/dock.svg                                                  (../../zen/izi/icons/dock.svg)
+        content/browser/izi/icons/fakefill.svg                                              (../../zen/izi/icons/fakefill.svg)
+        content/browser/izi/icons/mcp.svg                                                   (../../zen/izi/icons/mcp.svg)
+        content/browser/izi/icons/mobile.svg                                                (../../zen/izi/icons/mobile.svg)
+        content/browser/izi/icons/moon.svg                                                  (../../zen/izi/icons/moon.svg)
+        content/browser/izi/icons/notes.svg                                                 (../../zen/izi/icons/notes.svg)
+        content/browser/izi/icons/plus.svg                                                  (../../zen/izi/icons/plus.svg)
+        content/browser/izi/icons/search.svg                                                (../../zen/izi/icons/search.svg)
+        content/browser/izi/icons/settings.svg                                              (../../zen/izi/icons/settings.svg)
+        content/browser/izi/icons/sleep.svg                                                 (../../zen/izi/icons/sleep.svg)
+        content/browser/izi/icons/sun.svg                                                   (../../zen/izi/icons/sun.svg)
+        content/browser/izi/icons/tabs.svg                                                  (../../zen/izi/icons/tabs.svg)

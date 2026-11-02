@@ -1,0 +1,154 @@
+# IZI DevSpace (Zen base) — Linux preview.
+# Builds Linux x64, launches it under Xvfb, drives the UI through Marionette
+# (scripts/izi_preview.py), and publishes screenshots + check results to the
+# `zen-preview` branch so changes can be reviewed without a local build.
+name: Zen Linux preview
+
+on:
+  push:
+    branches: [zen]
+    paths-ignore: ['**.md', 'docs/**']
+  workflow_dispatch:
+
+concurrency:
+  group: zen-linux-preview-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  linux-preview:
+    name: Build Linux x64 + UI preview
+    runs-on: ubuntu-24.04
+    timeout-minutes: 355
+    env:
+      SCCACHE_GHA_ENABLED: 'true'
+      CARGO_TERM_COLOR: always
+      CARGO_INCREMENTAL: 0
+      SURFER_COMPAT: x86_64
+      ZEN_DISABLE_LTO: 1
+      ZEN_GA_DISABLE_PGO: 1
+      IZI_FAST_BUILD: 1
+    steps:
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+
+      - name: sccache
+        uses: mozilla-actions/sccache-action@main
+        with:
+          disable_annotations: true
+
+      - name: Expose actions cache variables
+        uses: actions/github-script@v7
+        with:
+          script: |
+            core.exportVariable('ACTIONS_CACHE_URL', process.env['ACTIONS_CACHE_URL'])
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env['ACTIONS_RUNTIME_TOKEN'])
+
+      - name: Setup Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          sudo apt-get -o Acquire::Retries=3 update
+          sudo apt-get install -y python3 python3-pip dos2unix yasm nasm build-essential libgtk2.0-dev libpython3-dev m4 uuid libasound2-dev libcurl4-openssl-dev libdbus-1-dev libdrm-dev libdbus-glib-1-dev libgtk-3-dev libpulse-dev libx11-xcb-dev libxt-dev xvfb lld llvm rsync jq --fix-missing
+
+      - name: Load Surfer CI setup
+        run: npm run surfer -- ci --brand release --display-version "$(jq -r '.brands.release.release.displayVersion' surfer.json)"
+
+      - name: Download Firefox source
+        run: npm run download
+
+      - name: Setup Rust
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain $(sed -n 's/^channel *= *"\(.*\)"/\1/p' rust-toolchain.toml)
+          source $HOME/.cargo/env
+          rustup target add x86_64-unknown-linux-gnu
+
+      - name: Import patches
+        run: |
+          . "$HOME/.cargo/env"
+          npm run import
+
+      - name: Language packs
+        run: sh scripts/download-language-packs.sh
+
+      - name: Bootstrap
+        run: |
+          cd engine
+          export SURFER_PLATFORM="linux"
+          ./mach --no-interactive bootstrap --application-choice browser
+
+      - name: Build
+        env:
+          ZEN_RELEASE_BRANCH: release
+        run: |
+          export SURFER_PLATFORM="linux"
+          bash .github/workflows/src/release-build.sh
+
+      - name: Package
+        run: |
+          set -x
+          export SURFER_PLATFORM="linux"
+          export ZEN_RELEASE=1
+          npm run package
+          ls -la dist
+          mkdir -p ~/izi-app
+          tar -xf "$(ls dist/*.tar.* | grep -v -i 'jsshell\|symbols' | head -n1)" -C ~/izi-app
+          ls ~/izi-app
+
+      - name: Run UI preview
+        run: |
+          set -x
+          python3 -m pip install --user --break-system-packages marionette_driver
+          APP_DIR=$(dirname "$(find ~/izi-app -maxdepth 2 -type f -name zen | head -n1)")
+          PROFILE=$(mktemp -d)
+          cat > "$PROFILE/user.js" <<'PREFS'
+          user_pref("zen.welcome-screen.seen", true);
+          user_pref("browser.shell.checkDefaultBrowser", false);
+          user_pref("browser.startup.homepage_override.mstone", "ignore");
+          user_pref("datareporting.policy.dataSubmissionEnabled", false);
+          user_pref("toolkit.telemetry.reportingpolicy.firstRun", false);
+          user_pref("browser.aboutwelcome.enabled", false);
+          PREFS
+          export DISPLAY=:91
+          Xvfb :91 -screen 0 1440x900x24 -nolisten tcp &
+          sleep 2
+          "$APP_DIR/zen" --marionette --no-remote --profile "$PROFILE" -width 1440 -height 900 about:blank > browser.log 2>&1 &
+          mkdir -p preview-out
+          python3 scripts/izi_preview.py preview-out || echo "preview script failed: $?"
+          sleep 1
+          kill %2 || true
+          cp browser.log preview-out/browser.log || true
+          ls -la preview-out
+
+      - name: Publish to zen-preview branch
+        if: always()
+        run: |
+          set -x
+          [ -d preview-out ] || exit 0
+          cd preview-out
+          cat > README.md <<EOF2
+          # IZI DevSpace — UI preview
+          Commit: ${GITHUB_SHA}  ·  Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
+          EOF2
+          git init -q -b zen-preview
+          git add -A
+          git commit -q -m "UI preview for ${GITHUB_SHA}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" zen-preview
+
+      - name: sccache stats
+        if: always()
+        run: sccache --show-stats || true
