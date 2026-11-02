@@ -19,7 +19,6 @@ const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
   HttpServer: "chrome://remote/content/server/httpd.sys.mjs",
   NetUtil: "resource://gre/modules/NetUtil.sys.mjs",
-  ContextualIdentityService: "resource://gre/modules/ContextualIdentityService.sys.mjs",
 });
 
 const PREF_ENABLED = "izi.mcp.enabled";
@@ -274,7 +273,8 @@ function findTab(w, tabId) {
 
 function describeTab(w, t) {
   const ws = w.gZenWorkspaces?.getWorkspaceFromId?.(t.getAttribute("zen-workspace-id"));
-  const space = ws ? lazy.ContextualIdentityService.getPublicIdentityFromId(ws.containerTabId)?.name : null;
+  // The window's ContextualIdentityService global (module URL differs across Firefox versions).
+  const space = ws ? w.ContextualIdentityService.getPublicIdentityFromId(ws.containerTabId)?.name : null;
   return {
     id: t.linkedPanel || t.id,
     title: t.label,
@@ -379,7 +379,7 @@ const TOOLS = [
       const groups = w.gZenWorkspaces.getWorkspaces();
       const active = w.gZenWorkspaces.getActiveWorkspace();
       return text(
-        lazy.ContextualIdentityService.getPublicIdentities().map((s) => ({
+        w.ContextualIdentityService.getPublicIdentities().map((s) => ({
           id: s.userContextId,
           name: s.name,
           active: active?.containerTabId === s.userContextId,

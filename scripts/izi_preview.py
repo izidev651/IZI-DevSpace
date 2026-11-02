@@ -204,8 +204,18 @@ def run_steps():
     # Fake Fill button on a real page
     js(f"gBrowser.selectedTab = gBrowser.addTrustedTab({json.dumps(form_url)});")
     time.sleep(3)
+    probe = ajs("""const done = arguments[arguments.length - 1];
+      (async () => {
+        try {
+          const r = await gBrowser.selectedBrowser.browsingContext.currentWindowGlobal.getActor('IZIDevSpace').sendQuery('IZI:PageText', { maxChars: 60 });
+          done({ ok: true, r });
+        } catch (e) { done({ ok: false, e: String(e) + ' ' + (e.stack || '') }); }
+      })();""")
+    check("content actor responds", probe.get("ok"), probe)
     js("window.gIZIDevSpaceUI['_cmd_izi-fakefill-button']?.()")
     time.sleep(2)
+    toast = js("return document.getElementById('izi-toast')?.textContent || '';")
+    check("Fake Fill button fills the form", "field(s) filled" in toast, [toast, js("return window.gIZIDevSpaceUI.errors;")])
     shot("09-fakefill")
 
     # MCP over HTTP, exactly like an agent would
@@ -271,7 +281,9 @@ def run_steps():
     time.sleep(1)
     js("window.gIZIDevSpaceUI.openMcpPanel()")
     time.sleep(1.5)
-    shot("11-mcp-panel")
+    panel = js("""const p = document.getElementById('izi-mcp-panel');
+      return { state: p?.state, text: (p?.textContent || '').slice(0, 300) };""")
+    check("MCP panel opens and shows Running + snippet", panel.get("state") == "open" and "Running" in panel.get("text", "") and "claude mcp add" in panel.get("text", ""), panel)
     js("document.getElementById('izi-mcp-panel')?.hidePopup()")
     httpd.shutdown()
 
@@ -295,7 +307,11 @@ try:
 except Exception as e:
     errors = [repr(e)]
 with open(os.path.join(OUT, "results.json"), "w") as f:
-    json.dump({"state": state, "state2": state2, "results": results, "izi_console": errors}, f, indent=2)
+    try:
+        ui_errors = js("return window.gIZIDevSpaceUI?.errors || [];")
+    except Exception as e:
+        ui_errors = [repr(e)]
+    json.dump({"state": state, "state2": state2, "results": results, "izi_console": errors, "ui_errors": ui_errors}, f, indent=2)
 client.delete_session()
 failed = [r for r in results if not r["ok"]]
 print(f"\n{len(results) - len(failed)}/{len(results)} checks passed")

@@ -26,8 +26,7 @@ function registerIZIActor() {
     ChromeUtils.registerWindowActor("IZIDevSpace", {
       parent: { esModuleURI: "resource:///modules/izi/IZIDevSpaceParent.sys.mjs" },
       child: { esModuleURI: "resource:///modules/izi/IZIDevSpaceChild.sys.mjs" },
-      allFrames: true,
-      messageManagerGroups: ["browsers"],
+      allFrames: true, // content documents only (includeChrome defaults to false)
     });
   } catch (e) {
     if (e.name !== "NotSupportedError") throw e; // already registered by another window
@@ -788,7 +787,8 @@ class nsIZIDevSpaceUI extends nsZenDOMOperatedFeature {
       try {
         filled += (await bc.currentWindowGlobal?.getActor("IZIDevSpace").sendQuery("IZI:FakeFill")) || 0;
       } catch (e) {
-        // cross-process or privileged frames without the actor
+        // Frames without the actor (about:, privileged) are expected; record the rest.
+        if (bc === tab.linkedBrowser.browsingContext) this.#err("fakefill", e);
       }
     }
     if (tab === gBrowser.selectedTab) this.toast(filled ? `Fake Fill: ${filled} field(s) filled` : "Fake Fill: no fillable fields found");
