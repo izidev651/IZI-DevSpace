@@ -337,7 +337,7 @@ async function snapshotPng(tab, fullPage) {
   if (fullPage) {
     const m = await query(tab, "IZI:Metrics");
     const h = Math.min(m.height, 16000);
-    rect = new (tab.ownerGlobal.DOMRect)(0, 0, m.width, h);
+    rect = new (tab.ownerDocument.defaultView.DOMRect)(0, 0, m.width, h);
   } else {
     const b = tab.linkedBrowser.getBoundingClientRect();
     scale = b.width > 1280 ? 1280 / b.width : 1;
