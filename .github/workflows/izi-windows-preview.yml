@@ -37,7 +37,9 @@ jobs:
         run: |
           RUN_ID="${{ inputs.run-id }}"
           if [ -z "$RUN_ID" ]; then
-            RUN_ID=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/izi-windows-build.yml/runs?branch=zen&status=success&per_page=1" -q '.workflow_runs[0].id')
+            # Newest non-expired Windows build artifact from branch zen.
+            RUN_ID=$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=IZI-DevSpace-Windows-x64&per_page=30" \
+              -q '[.artifacts[] | select(.expired == false and .workflow_run.head_branch == "zen")] | sort_by(.created_at) | last | .workflow_run.id')
           fi
           echo "Using build run $RUN_ID"
           echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"

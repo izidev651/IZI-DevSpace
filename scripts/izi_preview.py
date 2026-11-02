@@ -48,103 +48,123 @@ def wait_for(expr, timeout=30):
         time.sleep(0.5)
     return False
 
-check("IZI UI initialised", wait_for("document.documentElement.hasAttribute('izi-devspace')", 60))
-time.sleep(2)
-state = js("""
-  const ui = window.gIZIDevSpaceUI;
-  return {
-    strip: !!document.getElementById('izi-strip'),
-    spaces: ui.spaces.map(s => s.name),
-    groups: ui.groupsOf(ui.activeSpaceId).map(g => g.name),
-    activeSpace: ui.activeSpaceId,
-    widgets: ['izi-devtools-button','izi-mobile-button','screenshot-button','developer-button','izi-dock-button','izi-sleep-button']
-      .map(id => [id, !!document.getElementById(id)]),
-    vertical: Services.prefs.getBoolPref('zen.tabs.vertical'),
-    title: document.title,
-  };
-""")
-print(json.dumps(state, indent=2))
-check("strip present", state["strip"])
-check("Personal + Work spaces", {"Personal", "Work"} <= set(state["spaces"]), state["spaces"])
-check("toolbar widgets present", all(v for _, v in state["widgets"]), state["widgets"])
-shot("01-start")
+def run_steps():
+    global state, state2
+    check("IZI UI initialised", wait_for("document.documentElement.hasAttribute('izi-devspace')", 60))
+    time.sleep(2)
+    shot("00-boot")
+    state = js("""
+      const ui = window.gIZIDevSpaceUI;
+      if (!ui) return { strip: !!document.getElementById('izi-strip'), spaces: [], groups: [], widgets: [], missing: 'gIZIDevSpaceUI' };
+      return {
+        strip: !!document.getElementById('izi-strip'),
+        spaces: ui.spaces.map(s => s.name),
+        groups: ui.groupsOf(ui.activeSpaceId).map(g => g.name),
+        activeSpace: ui.activeSpaceId,
+        widgets: ['izi-devtools-button','izi-mobile-button','screenshot-button','developer-button','izi-dock-button','izi-sleep-button']
+          .map(id => [id, !!document.getElementById(id)]),
+        vertical: Services.prefs.getBoolPref('zen.tabs.vertical'),
+        title: document.title,
+      };
+    """)
+    print(json.dumps(state, indent=2))
+    check("strip present", state["strip"])
+    check("Personal + Work spaces", {"Personal", "Work"} <= set(state["spaces"]), state["spaces"])
+    check("toolbar widgets present", all(v for _, v in state["widgets"]), state["widgets"])
+    shot("01-start")
 
-# Open a few pages (local data: URLs, no network needed)
-js("""
-  const page = (t, c) => 'data:text/html,' + encodeURIComponent(`<title>${t}</title><body style="margin:0;font-family:sans-serif"><header style="background:${c};color:#fff;padding:18px;font-size:24px">${t}</header><form style="padding:20px;display:grid;gap:10px;max-width:420px"><input name=fullname placeholder="Full name"><input type=email name=email placeholder=Email><input type=tel name=phone placeholder=Phone><textarea name=bio></textarea><button>Send</button></form></body>`);
-  gBrowser.addTrustedTab(page('Demo Shop', '#ff6b35'), { inBackground: false });
-  gBrowser.addTrustedTab(page('Docs', '#3b82f6'), { inBackground: true });
-""")
-time.sleep(3)
-shot("02-tabs")
+    # Open a few pages (local data: URLs, no network needed)
+    js("""
+      const page = (t, c) => 'data:text/html,' + encodeURIComponent(`<title>${t}</title><body style="margin:0;font-family:sans-serif"><header style="background:${c};color:#fff;padding:18px;font-size:24px">${t}</header><form style="padding:20px;display:grid;gap:10px;max-width:420px"><input name=fullname placeholder="Full name"><input type=email name=email placeholder=Email><input type=tel name=phone placeholder=Phone><textarea name=bio></textarea><button>Send</button></form></body>`);
+      gBrowser.addTrustedTab(page('Demo Shop', '#ff6b35'), { inBackground: false });
+      gBrowser.addTrustedTab(page('Docs', '#3b82f6'), { inBackground: true });
+    """)
+    time.sleep(3)
+    shot("02-tabs")
 
-# DevTools
-js("window.gIZIDevSpaceUI['_cmd_izi-devtools-button']?.()")
-ok = wait_for("document.querySelector('.devtools-toolbox-bottom-iframe, .devtools-toolbox-side-iframe, browser[src*=\"toolbox\"], iframe[src*=\"toolbox\"]')", 20)
-check("DevTools button opens toolbox", ok)
-time.sleep(2)
-shot("03-devtools")
-js("window.gIZIDevSpaceUI['_cmd_izi-devtools-button']?.()")
-time.sleep(2)
+    # DevTools
+    js("window.gIZIDevSpaceUI['_cmd_izi-devtools-button']?.()")
+    ok = wait_for("document.querySelector('.devtools-toolbox-bottom-iframe, .devtools-toolbox-side-iframe, browser[src*=\"toolbox\"], iframe[src*=\"toolbox\"]')", 20)
+    check("DevTools button opens toolbox", ok)
+    time.sleep(2)
+    shot("03-devtools")
+    js("window.gIZIDevSpaceUI['_cmd_izi-devtools-button']?.()")
+    time.sleep(2)
 
-# Mobile view (Responsive Design Mode)
-js("window.gIZIDevSpaceUI['_cmd_izi-mobile-button']?.()")
-ok = wait_for("gBrowser.selectedTab.linkedBrowser.closest('.rdm-toolbox, [class*=rdm]') || document.querySelector('.rdm-toolbar, .rdm-toolbox, browser.rdm-toolbar')", 20)
-check("Mobile button opens Responsive Design Mode", ok)
-time.sleep(2)
-shot("04-mobile")
-js("window.gIZIDevSpaceUI['_cmd_izi-mobile-button']?.()")
-time.sleep(2)
+    # Mobile view (Responsive Design Mode)
+    js("window.gIZIDevSpaceUI['_cmd_izi-mobile-button']?.()")
+    ok = wait_for("gBrowser.selectedTab.linkedBrowser.closest('.rdm-toolbox, [class*=rdm]') || document.querySelector('.rdm-toolbar, .rdm-toolbox, browser.rdm-toolbar')", 20)
+    check("Mobile button opens Responsive Design Mode", ok)
+    time.sleep(2)
+    shot("04-mobile")
+    js("window.gIZIDevSpaceUI['_cmd_izi-mobile-button']?.()")
+    time.sleep(2)
 
-# Dock (split view) with the second tab
-ok = js("""
-  const tabs = gBrowser.visibleTabs.filter(t => !t.hasAttribute('zen-empty-tab'));
-  const cur = gBrowser.selectedTab; const other = tabs.find(t => t !== cur);
-  if (!other) return false;
-  gZenViewSplitter.splitTabs([cur, other], 'vsep', 0); return true;
-""")
-time.sleep(3)
-check("Dock creates split view", ok and js("return gBrowser.selectedTab.hasAttribute('split-view');"))
-shot("05-dock")
-js("gZenViewSplitter.unsplitCurrentView();")
-time.sleep(1)
+    # Dock (split view) with the second tab
+    ok = js("""
+      const tabs = gBrowser.visibleTabs.filter(t => !t.hasAttribute('zen-empty-tab'));
+      const cur = gBrowser.selectedTab; const other = tabs.find(t => t !== cur);
+      if (!other) return false;
+      gZenViewSplitter.splitTabs([cur, other], 'vsep', 0); return true;
+    """)
+    time.sleep(3)
+    check("Dock creates split view", ok and js("return gBrowser.selectedTab.hasAttribute('split-view');"))
+    shot("05-dock")
+    js("gZenViewSplitter.unsplitCurrentView();")
+    time.sleep(1)
 
-# Sleep tab
-before = js("return gBrowser.tabs.filter(t => t.hasAttribute('pending')).length;")
-ajs("const done = arguments[arguments.length-1]; window.gIZIDevSpaceUI.sleepTab().then(() => done(true), e => done(String(e)));")
-time.sleep(2)
-after = js("return gBrowser.tabs.filter(t => t.hasAttribute('pending')).length;")
-check("Sleep unloads the tab", after > before, f"pending {before} -> {after}")
+    # Sleep tab
+    before = js("return gBrowser.tabs.filter(t => t.hasAttribute('pending')).length;")
+    ajs("const done = arguments[arguments.length-1]; window.gIZIDevSpaceUI.sleepTab().then(() => done(true), e => done(String(e)));")
+    time.sleep(2)
+    after = js("return gBrowser.tabs.filter(t => t.hasAttribute('pending')).length;")
+    check("Sleep unloads the tab", after > before, f"pending {before} -> {after}")
 
-# Add group + add space
-ajs("const done = arguments[arguments.length-1]; const ui = window.gIZIDevSpaceUI; ui.createGroup(ui.activeSpaceId, 'Docs').then(() => done(true), e => done(String(e)));")
-time.sleep(3)
-groups = js("const ui = window.gIZIDevSpaceUI; return ui.groupsOf(ui.activeSpaceId).map(g => g.name);")
-check("Add Group creates a group in the active Space", "Docs" in groups, groups)
-shot("06-new-group")
+    # Add group + add space
+    ajs("const done = arguments[arguments.length-1]; const ui = window.gIZIDevSpaceUI; ui.createGroup(ui.activeSpaceId, 'Docs').then(() => done(true), e => done(String(e)));")
+    time.sleep(3)
+    groups = js("const ui = window.gIZIDevSpaceUI; return ui.groupsOf(ui.activeSpaceId).map(g => g.name);")
+    check("Add Group creates a group in the active Space", "Docs" in groups, groups)
+    shot("06-new-group")
 
-ajs("""const done = arguments[arguments.length-1];
-  const ui = window.gIZIDevSpaceUI;
-  const id = ContextualIdentityService.create('Research', 'circle', 'purple').userContextId;
-  ui.createGroup(id, 'Main').then(() => done(true), e => done(String(e)));""")
-time.sleep(3)
-state2 = js("const ui = window.gIZIDevSpaceUI; return { spaces: ui.spaces.map(s => s.name), active: ui.spaces.find(s => s.id === ui.activeSpaceId)?.name, groups: ui.groupsOf(ui.activeSpaceId).map(g => g.name) };")
-check("Add Space creates a space and switches to it", state2["active"] == "Research", state2)
-shot("07-new-space")
+    ajs("""const done = arguments[arguments.length-1];
+      const ui = window.gIZIDevSpaceUI;
+      const id = ContextualIdentityService.create('Research', 'circle', 'purple').userContextId;
+      ui.createGroup(id, 'Main').then(() => done(true), e => done(String(e)));""")
+    time.sleep(3)
+    state2 = js("const ui = window.gIZIDevSpaceUI; return { spaces: ui.spaces.map(s => s.name), active: ui.spaces.find(s => s.id === ui.activeSpaceId)?.name, groups: ui.groupsOf(ui.activeSpaceId).map(g => g.name) };")
+    check("Add Space creates a space and switches to it", state2["active"] == "Research", state2)
+    shot("07-new-space")
 
-# Back to Personal, then light theme
-ajs("const done = arguments[arguments.length-1]; const ui = window.gIZIDevSpaceUI; const p = ui.spaces.find(s => s.name === 'Personal'); ui.activateSpace(p.id).then(() => done(true), e => done(String(e)));")
-time.sleep(2)
-js("Services.prefs.setIntPref('zen.view.window.scheme', 1);")
-time.sleep(2)
-shot("08-light")
-js("Services.prefs.setIntPref('zen.view.window.scheme', 0);")
-time.sleep(1)
+    # Back to Personal, then light theme
+    ajs("const done = arguments[arguments.length-1]; const ui = window.gIZIDevSpaceUI; const p = ui.spaces.find(s => s.name === 'Personal'); ui.activateSpace(p.id).then(() => done(true), e => done(String(e)));")
+    time.sleep(2)
+    js("Services.prefs.setIntPref('zen.view.window.scheme', 1);")
+    time.sleep(2)
+    shot("08-light")
+    js("Services.prefs.setIntPref('zen.view.window.scheme', 0);")
+    time.sleep(1)
 
-errors = js("""
+
+state, state2 = {}, {}
+try:
+    run_steps()
+except Exception as e:
+    import traceback
+    traceback.print_exc()
+    check("preview script completed", False, repr(e))
+    try:
+        shot("99-error")
+    except Exception:
+        pass
+
+try:
+    errors = js("""
   const msgs = Services.console.getMessageArray() || [];
   return msgs.map(m => m.message || String(m)).filter(t => /IZI|izi-devspace|IZIDevSpace/.test(t)).slice(-30);
 """)
+except Exception as e:
+    errors = [repr(e)]
 with open(os.path.join(OUT, "results.json"), "w") as f:
     json.dump({"state": state, "state2": state2, "results": results, "izi_console": errors}, f, indent=2)
 client.delete_session()
