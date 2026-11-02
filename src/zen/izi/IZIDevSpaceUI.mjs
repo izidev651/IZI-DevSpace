@@ -27,6 +27,11 @@ function registerIZIActor() {
       parent: { esModuleURI: "resource:///modules/izi/IZIDevSpaceParent.sys.mjs" },
       child: { esModuleURI: "resource:///modules/izi/IZIDevSpaceChild.sys.mjs" },
       allFrames: true, // content documents only (includeChrome defaults to false)
+      // Required for web content processes. Safe here: the parent side handles no
+      // messages (IZIDevSpaceParent is empty), so a compromised content process
+      // cannot ask the parent for anything; it can only answer the parent's own
+      // queries with data about its own page, which it already controls.
+      safeForUntrustedWebProcess: true,
     });
   } catch (e) {
     if (e.name !== "NotSupportedError") throw e; // already registered by another window
