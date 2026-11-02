@@ -75,6 +75,18 @@ def run_steps():
     print(json.dumps(state, indent=2))
     check("strip present", state["strip"])
     check("Personal + Work spaces", {"Personal", "Work"} <= set(state["spaces"]), state["spaces"])
+    look = js("""
+      const sp = document.querySelector('.izi-space.active'), gr = document.querySelector('.izi-group.active');
+      const navBtns = document.querySelectorAll('#zen-appcontent-navbar-container .titlebar-buttonbox-container');
+      return {
+        spaceBorder: sp ? getComputedStyle(sp).borderTopColor : null,
+        groupBg: gr ? getComputedStyle(gr).backgroundColor : null,
+        dupWinButtons: [...navBtns].filter(b => getComputedStyle(b).display !== 'none').length,
+      };
+    """)
+    check("active Space has coloured ring", bool(look.get("spaceBorder")) and look["spaceBorder"] not in ("rgba(0, 0, 0, 0)", "transparent"), look)
+    check("active Group tile is filled", bool(look.get("groupBg")) and look["groupBg"] not in ("rgba(0, 0, 0, 0)",) , look)
+    check("no duplicate window buttons", look.get("dupWinButtons") == 0, look)
     check("toolbar widgets present", all(v for _, v in state["widgets"]), state["widgets"])
     check("init reached ready", state.get("stage") == "ready" and not state.get("errors"), [state.get("stage"), state.get("errors")])
     check("horizontal tab strip present", state.get("tabstrip"))

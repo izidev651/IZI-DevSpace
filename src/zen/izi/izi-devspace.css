@@ -36,8 +36,8 @@
 }
 
 /* macOS traffic lights sit at the top-left. */
-:root[izi-devspace]:is([platform="macosx"], :-moz-platform(macos)) #izi-strip {
-  padding-top: 38px;
+@media (-moz-platform: macos) {
+  :root[izi-devspace] #izi-strip { padding-top: 38px; }
 }
 
 #izi-strip .izi-col {
@@ -216,7 +216,9 @@
 #izi-tabstrip > :not(.izi-drag-spacer) { -moz-window-dragging: no-drag; }
 #izi-tabstrip .izi-drag-spacer { flex: 1; align-self: stretch; min-width: 40px; -moz-window-dragging: drag; }
 :root[inDOMFullscreen] #izi-tabstrip { display: none; }
-:root:is([platform="macosx"], :-moz-platform(macos))[izi-devspace] #izi-tabstrip { padding-inline-start: 78px; }
+@media (-moz-platform: macos) {
+  :root[izi-devspace] #izi-tabstrip { padding-inline-start: 78px; }
+}
 
 #izi-tabstrip button {
   appearance: none; font: inherit; color: inherit; background: none; border: 0; padding: 0; margin: 0;
@@ -269,9 +271,28 @@
 #izi-win-close:hover { background: #e81123 !important; color: #fff; }
 
 /* Zen's own window buttons are replaced by the IZI tab strip ones. */
-:root[izi-devspace]:not(:-moz-platform(macos)) #zen-appcontent-navbar-container .titlebar-buttonbox-container,
-:root[izi-devspace]:not(:-moz-platform(macos)) #nav-bar .titlebar-buttonbox-container {
-  display: none !important;
+@media not (-moz-platform: macos) {
+  :root[izi-devspace] #zen-appcontent-navbar-container .titlebar-buttonbox-container,
+  :root[izi-devspace] #nav-bar .titlebar-buttonbox-container {
+    display: none !important;
+  }
+}
+
+/* One flat IZI chrome colour instead of Zen's space gradient. */
+:root[izi-devspace] {
+  --zen-main-browser-background: var(--izi-bg) !important;
+  --zen-main-browser-background-toolbar: var(--izi-bg) !important;
+}
+:root[izi-devspace] #zen-browser-background,
+:root[izi-devspace] #zen-appcontent-navbar-wrapper,
+:root[izi-devspace] #zen-main-app-wrapper {
+  background: var(--izi-bg) !important;
+}
+:root[izi-devspace] #zen-browser-background .zen-browser-grain { display: none !important; }
+:root[izi-devspace] #nav-bar { background: transparent !important; }
+:root[izi-devspace] #urlbar:not([breakout-extend]) #urlbar-background {
+  background-color: light-dark(#ffffff, #161e26) !important;
+  border-radius: 10px !important;
 }
 
 /* ------------------------------------------------------------------ */

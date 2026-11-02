@@ -43,7 +43,11 @@ function h(tag, attrs = {}, ...children) {
     if (k === "on") {
       for (const [ev, fn] of Object.entries(v)) el.addEventListener(ev, fn);
     } else if (k === "style" && typeof v === "object") {
-      Object.assign(el.style, v);
+      // Custom properties (--x) need setProperty; Object.assign ignores them.
+      for (const [prop, val] of Object.entries(v)) {
+        if (prop.startsWith("--")) el.style.setProperty(prop, val);
+        else el.style[prop] = val;
+      }
     } else {
       el.setAttribute(k, v === true ? "" : String(v));
     }
@@ -165,9 +169,9 @@ class nsIZIDevSpaceUI extends nsZenDOMOperatedFeature {
     const personal = find("Personal") || { id: ContextualIdentityService.create("Personal", "fingerprint", "turquoise").userContextId };
     if (!find("Work")) ContextualIdentityService.create("Work", "briefcase", "blue");
     for (const g of this.groups) {
-      if (!g.containerTabId) {
-        g.containerTabId = personal.id;
-        gZenWorkspaces.saveWorkspace(g);
+      if (!g.containerTabId || g.name === "Space") {
+        // Zen's first workspace is called "Space"; in IZI terms it is a Group.
+        gZenWorkspaces.saveWorkspace({ ...g, containerTabId: g.containerTabId || personal.id, name: g.name === "Space" ? "Browse" : g.name });
       }
     }
     Services.prefs.setBoolPref(PREF_MIGRATED, true);
